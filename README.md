@@ -2,20 +2,19 @@
 
 Initially based on [Angular Express Seed](https://github.com/btford/angular-express-seed).
 
-Start an awesome app with AngularJS on the front, Express + Node on the back. This project is an
-application skeleton for a typical [AngularJS](http://angularjs.org/) web app for those who want
-to use Node to serve their app.
+With Bower and Grunt.
 
 ## How to use it
 
-Clone the angular-express-seed repository, run `npm install && bower install` to grab the dependencies, and start hacking!
+- Clone 
+- Run `npm install && bower install`
+- Start hacking!
 
 ### Running the app
 
 Runs like a typical express app:
 
     node app.js
-
 
 ### Grunt
 
@@ -27,6 +26,9 @@ Runs like a typical express app:
     
     app.js              --> app config
     package.json        --> for npm
+    bower.json          --> for bower
+    Gruntfile.js        --> tasks for linter and dev
+    .bowerrc            --> config file for bower
     frontend/           --> all of the files to be used in on the client side
       css/              --> css files
         app.css         --> default stylesheet
@@ -46,6 +48,23 @@ Runs like a typical express app:
     backend/
       api.js            --> route for serving JSON
       index.js          --> route for serving HTML pages and partials
+      
+## Next steps 
+
+Yeoman generator.
+
+## Contributors
+
+- You!
 
 ## License
-MIT
+
+(The MIT License)
+
+Copyright (c) 2014 Th0masm
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the 'Software'), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
