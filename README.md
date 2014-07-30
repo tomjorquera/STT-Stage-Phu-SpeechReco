@@ -6,15 +6,31 @@ With Bower and Grunt.
 
 ## How to use it
 
-- Clone 
-- Run `npm install && bower install`
-- Start hacking!
+1. clone the repository (or fork to hack it!)
 
-### Running the app
+        git clone https://github.com/th0masm/angular-express-skel.git
 
-Runs like a typical express app:
+2. install node.js
 
-    node app.js
+3. install the npm dependencies
+
+        npm install -g grunt-cli bower
+
+4. install the gjslint dependency
+
+        easy_install http://closure-linter.googlecode.com/files/closure_linter-latest.tar.gz
+
+    more informations [can be found here](https://developers.google.com/closure/utilities/docs/linter_howto)
+
+5. Go into the project directory and install project dependencies
+
+        cd angular-express-skel
+        npm install
+        bower install
+
+6. Launch it
+
+        grunt dev
 
 ### Grunt
 
