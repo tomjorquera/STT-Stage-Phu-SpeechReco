@@ -50,7 +50,7 @@ app.get('/partials/:name', routes.partials);
 
 // API
 app.get('/api/name', api.name);
-app.get('testnodeJava/os', testnodeJava.osName)
+app.get('testnodeJava/os', testnodeJava.osName);
 
 // redirect all others to the index (HTML5 history)
 app.get('*', routes.index);
