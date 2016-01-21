@@ -15,7 +15,7 @@ angular.module('myApp.controllers', []).
     error(function(data, status, headers, config) {
       $scope.name = 'Error!';
     });
-
+    
     $http({
       method: 'GET',
       url: '/testnodeJava/os'

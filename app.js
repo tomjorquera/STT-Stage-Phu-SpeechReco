@@ -7,9 +7,8 @@ var express = require('express'),
   api = require('./backend/api'),
   http = require('http'),
   path = require('path'),
-  os = require('os'),
-  nodejava = require('java'),
   testnodeJava = require('./backend/testnodeJava');
+
 
 var app = module.exports = express();
 

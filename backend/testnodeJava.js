@@ -1,10 +1,14 @@
-var os = require('os');
-document.write('You are running on ',os.platform(),"</br></br>");
+'use strict';
 
-var javaO = require('java');
+/*
+ * Serve JSON to our AngularJS client
+ */
 
-console.log(javaO);
-
-var javaLangSystem = javaO.import('java.lang.System');
-
-document.write(javaLangSystem.getPropertySync("os.name"));
+ exports.osName = function(req, res) {
+ 	var os = require('os');
+ 	var nodejava = require('java');
+ 	res.json({
+ 		osOs: os.platform(),
+ 		osJava: nodejava.import('java.lang.System').getPropertySync('os.name')
+ 	});
+ };
