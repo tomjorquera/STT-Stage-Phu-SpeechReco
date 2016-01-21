@@ -15,7 +15,6 @@ angular.module('myApp.controllers', []).
     error(function(data, status, headers, config) {
       $scope.name = 'Error!';
     });
-
   }).
   controller('MyCtrl1', function($scope) {
     // write Ctrl here
