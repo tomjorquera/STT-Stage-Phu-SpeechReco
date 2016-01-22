@@ -5,13 +5,14 @@ block body
       .container
           .jumbotron
               h2 {{name}}
-
-              ul.menu
-                  li
-                      a(href='view1') view1
-                  li
-                      a(href='view2') view2
-
+              hr
+              p Choose your input type: 
+              div(ng-controller='inputChosenController')
+                span
+                  select.btn-primary(ng-model='optionSelected', ng-change='setValue(optionSelected); setLink(optionSelected.value)', data-ng-options='chooseOption as chooseOption.name for chooseOption in chooseOptions')
+                  a.btn.btn-info(href='{{link}}', role='button') OK
+              br            
+              hr
               div(ng-view)
 
               div

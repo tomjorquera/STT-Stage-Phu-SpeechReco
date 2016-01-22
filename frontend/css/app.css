@@ -9,9 +9,10 @@ body {
     margin-bottom: 60px;
 }
 .footer {
-    position: absolute;
+    position: fixed;
     bottom: 0;
     width: 100%;
+    overflow: hidden;
     /* Set the fixed height of the footer here */
     height: 60px;
     background-color: #f5f5f5;
@@ -32,3 +33,68 @@ body > .container {
 code {
     font-size: 80%;
 }
+
+body {
+    height: 100%;
+}
+
+#drop {
+    position: relative;
+    top: 10px;
+    height: 30px;
+    border-radius: 2px;
+    line-height: 30px;
+    border: 2px black;
+    text-align: center;
+    font-size: 15px;
+    font-family: sans-serif;
+    color: black;
+    background-color:  #e67300;
+
+}
+
+#drop.hover {
+    color: green;
+    background-color: #009900;
+    border-color: green;
+}
+
+#audioPath{
+    position: relative;
+    top: 20px;  
+    color: #CCC;
+    text-align: left;
+    font-size: 15px;
+    font-family: sans-serif;
+}
+
+#audioPath.hover{
+    position: relative;
+    top: 20px;  
+    color: black;
+    text-align: left;
+    font-size: 15px;
+    font-family: sans-serif;
+}
+
+#transcribedText{
+    position: relative;
+    top :30px;  
+    color: black;
+    text-align: left;
+    font-size: 15px;
+    font-family: sans-serif;
+}
+
+blockquote {
+    border: none;
+    quotes: "\201C" "\201D";
+    display: inline-block;
+}
+
+blockquote:before { content: open-quote; font-weight: bold; display: inline-block; } 
+
+span.tab{
+    padding: 0 80px; /* Or desired space*/
+}
+
