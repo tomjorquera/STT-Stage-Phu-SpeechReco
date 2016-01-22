@@ -8,7 +8,7 @@ With Bower and Grunt.
 
 1. clone the repository (or fork to hack it!)
 
-        git clone https://github.com/th0masm/angular-express-skel.git
+        git clone https://github.com/Mignastor/SpeechReco.git
 
 2. install node.js
 
