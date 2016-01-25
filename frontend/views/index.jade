@@ -8,9 +8,9 @@ block body
               hr
               p Choose your input type: 
               div(ng-controller='inputChosenController')
-                span
-                  select.btn-primary(ng-model='optionSelected', ng-change='setValue(optionSelected); setLink(optionSelected.value)', data-ng-options='chooseOption as chooseOption.name for chooseOption in chooseOptions')
-                  a.btn.btn-info(href='{{link}}', role='button') OK
+                select.btn-primary(ng-model='optionSelected', ng-change='setValue(optionSelected); setLink(optionSelected.value)', data-ng-options='chooseOption as chooseOption.name for chooseOption in chooseOptions') 
+                &nbsp; &nbsp;
+                a.btn.btn-info.btn-xs(href='{{link}}', role='button') OK
               br            
               hr
               div(ng-view)

@@ -12,19 +12,19 @@ angular.module('myApp', [
 config(function($routeProvider, $locationProvider) {
   $routeProvider.
     when('/audiofile', {
-      templateUrl: 'partials/partial1',
+      templateUrl: 'partials/audioFilePartial',
       controller: 'MyCtrl1'
     }).
     when('/yourmicro', {
-      templateUrl: 'partials/partial2',
+      templateUrl: 'partials/microPartial',
       controller: 'MyCtrl2'
     }).
     when('/corpus', {
-      templateUrl: 'partials/partial2',
+      templateUrl: 'partials/corpusPartial',
       controller: 'MyCtrl2'
     }).
     otherwise({
-      templateUrl: 'partials/partial2'
+      templateUrl: 'partials/acceuilPartial'
     });
 
   $locationProvider.html5Mode(true);
