@@ -1,7 +1,5 @@
-div
-  input#myfile.btn(type="file", name="file")
-  br
-  button#getPathButton.btn.btn-default(type="button") Get Path
-  br
-  div#audioPath  Selected Audio: Audio Path ...
-  br
+form#uploadForm(name="upload", method="post", action="/upload", enctype="multipart/form-data")
+	input#myfile(type="file", name="audioFile")
+	br
+	input#uploadButton.btn.btn-default(type='button', value='Upload')  
+	div#uploadStatus 

@@ -1,13 +1,9 @@
 h2 Transcribe Your Audio File
-hr
-form(method='post', enc-type='multipart/form-data')
-	p You can drag an audio file on the zone below:
-	drag-box
-	br
-	br
-	p Or choose a file here:
-	choose-file
-	hr
-	transcribe
 
-	
+p Choose a file here:
+choose-file
+br
+a(href='/transcribe/#')
+  input.btn.btn-primary(type='button', value='Transcribe Your Audio')
+br
+blockquote#transcribedText Transcribed text here: {{transcribedText}}	

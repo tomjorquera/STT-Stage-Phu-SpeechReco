@@ -13,7 +13,7 @@ config(function($routeProvider, $locationProvider) {
   $routeProvider.
     when('/audiofile', {
       templateUrl: 'partials/audioFilePartial',
-      controller: 'MyCtrl1'
+      controller: 'MyCtrl1' 
     }).
     when('/yourmicro', {
       templateUrl: 'partials/microPartial',
@@ -22,6 +22,15 @@ config(function($routeProvider, $locationProvider) {
     when('/corpus', {
       templateUrl: 'partials/corpusPartial',
       controller: 'MyCtrl2'
+    }).
+    //transcribe page
+    when('/transcribe', {
+      templateUrl: 'partials/audioFilePartial',
+      controller: 'Transcribe'
+    }).
+    //upload file
+    when('/upload', {
+      controller: 'Upload'
     }).
     otherwise({
       templateUrl: 'partials/acceuilPartial'

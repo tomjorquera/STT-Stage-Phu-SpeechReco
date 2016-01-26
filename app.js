@@ -7,8 +7,10 @@ var express = require('express'),
   api = require('./backend/api'),
   http = require('http'),
   path = require('path'),
-  testnodeJava = require('./backend/testnodeJava');
-
+  busboy = require('connect-busboy'), //middleware for form/file upload
+  testnodeJava = require('./backend/testnodeJava'),
+  transcribe = require('./backend/transcribe'),
+  upload = require('./backend/upload');
 
 var app = module.exports = express();
 
@@ -25,6 +27,7 @@ app.use(morgan('dev'));
 app.use(bodyParser());
 app.use(methodOverride());
 app.use(express.static(path.join(__dirname, 'frontend')));
+app.use(busboy());
 
 var env = process.env.NODE_ENV || 'development';
 
@@ -50,10 +53,12 @@ app.get('/partials/:name', routes.partials);
 // API
 app.get('/api/name', api.name);
 app.get('/testnodeJava/os', testnodeJava.osName);
-
+app.get('/audiofile/transcribe', transcribe.transcribedText);
 // redirect all others to the index (HTML5 history)
 app.get('*', routes.index);
 
+//upload file
+app.post('/upload', upload.uploadFile);
 
 /**
  * Start Server

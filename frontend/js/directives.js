@@ -1,13 +1,5 @@
 'use strict';
 
-//var glo
-function File(path, visible){
-	this.path = path;
-	this.visible = visible;
-};
-
-var file = new File("null",false);
-
 /* Directives */
 angular.module('myApp.directives', []).
 	directive('appName', function(appname) {
@@ -38,18 +30,12 @@ angular.module('myApp.directives', []).
 					e.preventDefault();
 					this.className="";
 					this.innerHTML = "Drop the icon here";
-					var transcribedText = document.getElementById('transcribedText');
-					transcribedText.innerHTML = "Transcribed text here: ";
-					file.path = e.dataTransfer.files[e.dataTransfer.files.length-1].path;
-					var testAudio = file.path.indexOf(".wav");
-					if (testAudio !== -1) {		
-						audioPath.innerHTML = "Audio path: "+file.path;
-						audioPath.className = 'hover';
-					} else {
-						audioPath.innerHTML = "Le fichiez que vous avez choisi n'est pas un audio. Choisissez un audio.";
-						audioPath.className = 'hover';
-						file.path = "null";
-					}
+
+					//uploading file
+					//var uploadFile = e.dataTransfer.files[e.dataTransfer.files.length-1];
+
+					//document.forms["uploadForm"].append('<input type="hidden" name="myparam " value="{{uploadFile}}" />')
+					document.forms["uploadForm"].submit();
 				}
 			},
 			controllerAs: 'dragbox',
@@ -59,49 +45,15 @@ angular.module('myApp.directives', []).
 		return {
 			restrict: 'E',
 			templateUrl: 'partials/choose-file',
-			controller: function(){
-				//get path when cliking button
-				document.getElementById("getPathButton").addEventListener("click", function(){
-					//upload file
-					//var uploadFile = document.getElementById('myfile').files[0];
-					console.log();
-					if (document.getElementById('myfile').files[0] !== undefined){
-						var transcribedText = document.getElementById('transcribedText');
-						transcribedText.innerHTML = "Transcribed text here: ";
-						file.path = document.getElementById('myfile').files[0].path;
-						var audioPath = document.getElementById('audioPath');
-						audioPath.innerHTML = "Audio path: "+file.path;
-						audioPath.className = 'hover';
-						console.log(file.path);
-						var testAudio = file.path.indexOf(".wav");
-						if (testAudio !== -1) {		
-							audioPath.innerHTML = "Audio path: "+file.path;
-							audioPath.className = 'hover';
-						} else {
-							var audioPath= document.getElementById('audioPath');
-							audioPath.innerHTML = "Le fichiez que vous avez choisi n'est pas un audio. Choisissez un audio.";
-							audioPath.className = 'hover';
-							file.path = "null"
-						}
+			controller: function($scope){
+				var uploadStatus = document.getElementById('uploadStatus');
+				document.getElementById('uploadButton').addEventListener('click', function(){
+					if ((document.getElementById('myfile').files.length !== 0)){
+						document.forms["uploadForm"].submit();
+						uploadStatus.innerHTML = "File was uploaded.";
+					} else {
+						uploadStatus.innerHTML = "Choose a file first.";
 					}
-				});
-			},
-			controllerAs: 'choosefile',
-		}
-	}).
-	directive('transcribe',function(){
-		return {
-			restrict: 'EA',
-			templateUrl: 'partials/transcribe',
-			controller: function(){
-				document.getElementById("transcribeBtn").addEventListener("click",function(){
-					if (file.path !== "null"){
-						//execute code java de sphinx-4 par node-java
-						var stt = java.import("AppTestSpeechReco");
-						var appSpeech = new stt();
-						var result = appSpeech.transcribeSync(file.path);
-						transcribedText.innerHTML = result;
-					} else { transcribedText.innerHTML ="choisir d'abord un fichier d'audio";}
 				});
 			}
 		}

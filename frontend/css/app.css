@@ -6,7 +6,7 @@ html {
 }
 body {
     /* Margin bottom by footer height */
-    margin-bottom: 60px;
+    padding-bottom: 60px;
 }
 .footer {
     position: fixed;
@@ -59,19 +59,10 @@ body {
     border-color: green;
 }
 
-#audioPath{
+#uploadStatus{
     position: relative;
     top: 20px;  
-    color: #CCC;
-    text-align: left;
-    font-size: 15px;
-    font-family: sans-serif;
-}
-
-#audioPath.hover{
-    position: relative;
-    top: 20px;  
-    color: black;
+    color: grey;
     text-align: left;
     font-size: 15px;
     font-family: sans-serif;
@@ -84,17 +75,5 @@ body {
     text-align: left;
     font-size: 15px;
     font-family: sans-serif;
-}
-
-blockquote {
-    border: none;
-    quotes: "\201C" "\201D";
-    display: inline-block;
-}
-
-blockquote:before { content: open-quote; font-weight: bold; display: inline-block; } 
-
-span.tab{
-    padding: 0 80px; /* Or desired space*/
 }
 
