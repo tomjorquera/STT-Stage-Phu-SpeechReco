@@ -10,8 +10,14 @@ exports.transcribedText = function(req, res) {
     	var appSpeech = new stt();
     	result = appSpeech.transcribeSync(__dirname+'/../upload/'+filePath[0]);
     	fs.unlinkSync(__dirname+'/../upload/'+filePath[0]);
-    }else{result="Uploaded file is not an audio one. Choose another..."}
-  } else {result = "Upload a file first...";}
+    }else{
+      result="Uploaded file is not an audio one. Choose another...";
+      fs.unlinkSync(__dirname+'/../upload/'+filePath[0]);
+    }
+  } else {
+    result = "Upload a file first...";
+    fs.unlinkSync(__dirname+'/../upload/'+filePath[0]);
+  }
 	res.json({
  		transcribedText: result,
  	});
