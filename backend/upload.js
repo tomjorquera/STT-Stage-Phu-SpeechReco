@@ -2,6 +2,10 @@
 
 exports.uploadFile = function(req, res, next){
   var fs = require('fs-extra');       //File System - for file manipulation
+  var dirUploadFolder = __dirname+'/../upload/';
+  if (!fs.existsSync(dirUploadFolder)){
+    fs.mkdirSync(dirUploadFolder);
+  }
   var files = fs.readdirSync(__dirname+'/../upload/');
   if (files.length !== 0){
     for (var i=0;i<files.length;i++){
