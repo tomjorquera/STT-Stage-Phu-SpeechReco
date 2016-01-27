@@ -9,6 +9,6 @@
  	var nodejava = require('java');		
  	res.json({
  		osOs: os.platform(),
- 		osJava: nodejava.import('java.lang.System').getPropertySync('os.name')
+ 		//osJava: nodejava.import('java.lang.System').getPropertySync('os.name')
  	});
  };
