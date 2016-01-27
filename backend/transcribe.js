@@ -1,5 +1,6 @@
 exports.transcribedText = function(req, res) {
  	var java = require('java');
+  java.classpath.push(__dirname+"/lib/speechtotext.jar");
 	var fs = require('fs-extra');
 	var filePath = fs.readdirSync(__dirname+'/../upload/');
 	var result;
