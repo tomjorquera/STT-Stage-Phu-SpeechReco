@@ -68,7 +68,7 @@ body {
     font-family: sans-serif;
 }
 
-#transcribedText{
+blockquote{
     position: relative;
     top :30px;  
     color: black;

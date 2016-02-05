@@ -23,8 +23,11 @@ var app = module.exports = express();
 app.set('port', process.env.PORT || 8080);
 app.set('views', __dirname + '/frontend/views');
 app.set('view engine', 'jade');
+//app.use(express.limit('4mb'));
 app.use(morgan('dev'));
-app.use(bodyParser());
+//app.use(bodyParser());
+app.use(bodyParser.json({ limit: '5mb' }))
+//app.use(bodyParser.json());  
 app.use(methodOverride());
 app.use(express.static(path.join(__dirname, 'frontend')));
 app.use(busboy());
@@ -53,12 +56,13 @@ app.get('/partials/:name', routes.partials);
 // API
 app.get('/api/name', api.name);
 app.get('/testnodeJava/os', testnodeJava.osName);
-app.get('/audiofile/transcribe', transcribe.transcribedText);
+app.get('/transcribe/:tool/:inputtype', transcribe.transcribedText);
+
 // redirect all others to the index (HTML5 history)
 app.get('*', routes.index);
 
 //upload file
-app.post('/upload', upload.uploadFile);
+app.post('/upload/:datatype', upload.uploadFile);
 
 /**
  * Start Server

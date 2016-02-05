@@ -7,7 +7,9 @@ angular.module('myApp', [
   'myApp.controllers',
   'myApp.filters',
   'myApp.services',
-  'myApp.directives'
+  'myApp.factories',
+  'myApp.directives',
+  'ngFileUpload'
 ]).
 config(function($routeProvider, $locationProvider) {
   $routeProvider.
@@ -22,15 +24,6 @@ config(function($routeProvider, $locationProvider) {
     when('/corpus', {
       templateUrl: 'partials/corpusPartial',
       controller: 'MyCtrl2'
-    }).
-    //transcribe page
-    when('/transcribe', {
-      templateUrl: 'partials/audioFilePartial',
-      controller: 'Transcribe'
-    }).
-    //upload file
-    when('/upload', {
-      controller: 'Upload'
     }).
     otherwise({
       templateUrl: 'partials/acceuilPartial'
