@@ -1,6 +1,11 @@
 br
 button#transcribeButton.btn.btn-info Transcribe Your Audio
 br
-blockquote#transcribedText Transcribed text here:{{transcribedText}}
-blockquote Original text here : {{originalText}}
-blockquote#compareObject Compare text here :
+{{errorMessage}}
+br
+center
+	img(ng-src="images/loading.gif", style="width: 200px; height: 200px", ng-show="isShow")
+div(ng-hide="isShow")
+	blockquote#transcribedText Transcribed text here :{{transcribedText}}
+	blockquote#origialText Original text here : {{originalText}}
+	blockquote#compareObject Compare text here :

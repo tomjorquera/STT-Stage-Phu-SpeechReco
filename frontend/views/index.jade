@@ -6,21 +6,10 @@ block body
           .jumbotron
               h2 {{name}}
               hr
-              p Choose your input type: 
-              div(ng-controller='inputChosenController')
-                select.btn-primary(ng-model='optionSelected', ng-change='setValue(optionSelected); setLink(optionSelected.value)', data-ng-options='chooseOption as chooseOption.name for chooseOption in chooseOptions') 
-                &nbsp; &nbsp;
-                a.btn.btn-info.btn-xs(href='{{link}}', role='button') OK
+              choose-input
               br            
               hr
               div(ng-view)
-              br
-              br 
-              div
-                | This app is called :
-                span(app-name)
-              div
-                | This app is running on 
               br
               br
 

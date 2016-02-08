@@ -11,9 +11,10 @@ angular.module('myApp.directives', []).
 		return {
 			restrict: 'E',
 			templateUrl: 'partials/drag-box',
-			controller: function(){
+			controller: function($scope, Upload){
 				//Changement de la couleur
 				var el = document.querySelector('#drop');
+
 				el.ondragover = function() {
 					this.className = "hover";
 					this.innerHTML = "Drop the file";
@@ -22,23 +23,32 @@ angular.module('myApp.directives', []).
 
 				el.ondragleave =  function(){
 					this.className = "";
-					this.innerHTML = "Drop the icon here";
+					this.innerHTML = "Drop your file here";
 					return false;
 				}
 
 				el.ondrop = function(e){
 					e.preventDefault();
 					this.className="";
-					this.innerHTML = "Drop the icon here";
+					this.innerHTML = "Drop your file here";
 
 					//uploading file
-					//var uploadFile = e.dataTransfer.files[e.dataTransfer.files.length-1];
-
-					//document.forms["uploadForm"].append('<input type="hidden" name="myparam " value="{{uploadFile}}" />')
-					document.forms["uploadForm"].submit();
+					var uploadFile = e.dataTransfer.files[e.dataTransfer.files.length-1];
+					$scope.upload(uploadFile);					
 				}
+
+				$scope.upload = function (file) {
+			        Upload.upload({
+			            url: 'upload/stream',
+			            method: 'POST',
+			            file: file
+			        })
+			        if (file.type === "audio/wav") 
+			        	$scope.uploadAudioStatus="File was uploaded";
+			        else if (file.type === "text/plain")
+			        	$scope.uploadTextStatus="File was uploaded";
+			    };
 			},
-			controllerAs: 'dragbox',
 		}
 	}).
 	directive('chooseFile', function(){
@@ -55,10 +65,12 @@ angular.module('myApp.directives', []).
 			            method: 'POST',
 			            file: file
 			        })
-			        if (file.type === "audio/wav") 
-			        	$scope.uploadAudioStatus="File was uploaded";
-			        else if (file.type === "text/plain")
-			        	$scope.uploadTextStatus="File was uploaded";
+			        if(file !== null){
+				        if (file.type === "audio/wav") 
+				        	$scope.uploadAudioStatus="File was uploaded";
+				        else if (file.type === "text/plain")
+				        	$scope.uploadTextStatus="File was uploaded";
+				    }
 			    }; 
 			}
 		}
@@ -107,35 +119,46 @@ angular.module('myApp.directives', []).
 			restrict: 'E',
 			templateUrl: 'partials/transcribe-audio',
 			controller: function($scope, $http, toolSelectedFactory){
+				$scope.isShow = false;
 				var adr = location.href.substr(location.href.lastIndexOf('/'));
 				if (adr === '/audiofile'){
 					$scope.link=toolSelectedFactory.getTranscribeLink();
 					document.getElementById('transcribeButton').addEventListener('click', function(){
+						$scope.errorMessage ="";
+						$scope.isShow = true;
 						var link = toolSelectedFactory.getTranscribeLink();
-						console.log(link);
+						document.getElementById("compareObject").innerHTML = "Compare text here :";
+						$scope.transcribedText = "";
+						$scope.originalText = "";
 						$http({
 					      method: 'GET',
 					      url: toolSelectedFactory.getTranscribeLink()+'/audio'
 					    }).
 					    success(function(data, status, headers, config) {
 					      console.log(data.transcribedText);
+					      $scope.isShow = false;
 					      $scope.transcribedText = data.transcribedText;
 					      //affichage de comparaison
-					      var display = document.getElementById("compareObject");
-					      display.innerHTML = "Compare text here : ";
-					      data.compareObject.forEach(function(part){
-					        // green for additions, red for deletions
-					        // grey for common parts
-					        var color = part.added ? 'green' :
-					          part.removed ? 'red' : 'black';
-					        var span = document.createElement('span');
-					        span.style.color = color;
-					        span.appendChild(document
-					          .createTextNode(part.value));
-					        display.appendChild(span);
-					      });
-					      //$scope.compareObject = data.compareObject;
-					      $scope.originalText = data.originalTextExport;
+					      if (data.compareObject !== undefined){
+						      if (data.compareObject !== ""){
+							      var display = document.getElementById("compareObject");
+							      display.innerHTML = "Compare text here : ";
+							      data.compareObject.forEach(function(part){
+							        // green for additions, red for deletions
+							        // grey for common parts
+							        var color = part.added ? 'green' :
+							          part.removed ? 'red' : 'black';
+							        var span = document.createElement('span');
+							        span.style.color = color;
+							        span.appendChild(document
+							          .createTextNode(part.value));
+							        display.appendChild(span);
+							      });
+							      //$scope.compareObject = data.compareObject;
+							      $scope.originalText = data.originalTextExport;
+						       }
+						   }
+						  else $scope.errorMessage = "Choose a toolkit before!";
 					    }).
 					    error(function(data, status, headers, config) {
 					      $scope.transcribedText = 'Error!';
@@ -145,20 +168,27 @@ angular.module('myApp.directives', []).
 				else if (adr === '/yourmicro'){
 					$scope.link=toolSelectedFactory.getTranscribeLink();
 					document.getElementById('transcribeButton').addEventListener('click', function(){
+						document.getElementById("compareObject").innerHTML = "Compare text here :";
+						$scope.errorMessage ="";
+						$scope.isShow = true;
 						var link = toolSelectedFactory.getTranscribeLink();
-						console.log(link);
 						$http({
 					      method: 'GET',
 					      url: toolSelectedFactory.getTranscribeLink()+'/micro'
 					    }).
 					    success(function(data, status, headers, config) {
-					      console.log(data.transcribedText);
-					      $scope.transcribedText = data.transcribedText;
-					      //affichage de comparaison
-					      var display = document.getElementById("compareObject");
-					      display.innerHTML = "Compare text here : "+data.compareObject;
-					      //$scope.compareObject = data.compareObject;
-					      $scope.originalText = data.originalTextExport;
+					      $scope.isShow = false;
+					      if (data.compareObject !== undefined){   
+					      	  $scope.errorMessage=""; 
+						      console.log(data.transcribedText);
+						      $scope.transcribedText = data.transcribedText;
+						      //affichage de comparaison
+						      var display = document.getElementById("compareObject");
+						      display.innerHTML = "Compare text here : "+data.compareObject;
+						      //$scope.compareObject = data.compareObject;
+						      $scope.originalText = data.originalTextExport;
+						  }
+						  else $scope.errorMessage = "Choose a toolkit before!";
 					    }).
 					    error(function(data, status, headers, config) {
 					      $scope.transcribedText = 'Error!';
@@ -256,6 +286,36 @@ angular.module('myApp.directives', []).
 				startRecording.disabled = false;
 	    		stopRecording.disabled = true;
             }
+		};
+	}).
+	directive('chooseInput',function(){
+		return {
+			restrict: 'E',
+			templateUrl: 'partials/choose-input',
+			controller: function($scope){
+				$scope.chooseValue = 0;
+			    $scope.link ="";
+			    $scope.chooseOptions = [{value:1,name:"Audio File"},{value:2,name:"Your micro"},{value:3,name:"Corpus"}];//pas encore choisir
+			    $scope.setValue = function(option){
+			      $scope.chooseValue = option.value;
+			    };
+			    $scope.setLink = function(value){
+			      switch (value) {
+			        case 1 :
+			          $scope.link ="audiofile";
+			          break;
+			        case 2 :
+			          $scope.link ="yourmicro";
+			          break;
+			        case 3 :
+			          $scope.link ="corpus";
+			          break;
+			        default:
+			          $scope.link ="";
+			          break;
+			      };
+				}
+			}
 		};
 	})
 
