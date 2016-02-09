@@ -14,10 +14,10 @@ exports.transcribedText = function(req, res) {
       else if (selectedInput === 'micro')
         filePath = fs.readdirSync(__dirname+'/../recorded_audio/');
       var textFilePath = fs.readdirSync(__dirname+'/../upload_text/');
-      var originalText = fs.readFileSync(__dirname+'/../upload_text/'+textFilePath[0],"UTF-8").toLowerCase();
       var diffObject;
       var result;
-      if (filePath.length !== 0){
+      if (filePath.length !== 0 && textFilePath.length !== 0){
+        var originalText = fs.readFileSync(__dirname+'/../upload_text/'+textFilePath[0],"UTF-8").toLowerCase();
         if(filePath[0].indexOf('.wav')!==-1){
           //execute code java de sphinx-4 par node-java
           var stt = java.import("AppTestSpeechReco");
@@ -25,9 +25,9 @@ exports.transcribedText = function(req, res) {
           //2 cases of transcibe
           if (selectedInput === 'audio') {
             result = appSpeech.transcribeSync(__dirname+'/../upload_audio/'+filePath[0]);
-            fs.unlinkSync(__dirname+'/../upload_audio/'+filePath[0]);
             diffObject = jsdiff.diffWords(originalText, result);
             fs.unlinkSync(__dirname+'/../upload_text/'+textFilePath[0]);
+            fs.unlinkSync(__dirname+'/../upload_audio/'+filePath[0]);
             res.json({
               transcribedText: result,
               compareObject: diffObject,
@@ -55,7 +55,7 @@ exports.transcribedText = function(req, res) {
       } else {
         if (selectedInput === 'audio') 
           res.json({
-            transcribedText: "Upload a file first...",
+            transcribedText: "Text file or/and audio file are missing. Upload your files first...",
             compareObject: "",
             originalTextExport: "",
           });

@@ -60,12 +60,12 @@ angular.module('myApp.directives', []).
 				var uploadAudioStatus = document.getElementById('uploadAudioStatus');
 				var uploadStatus = document.getElementById('uploadStatus');
                 $scope.upload = function (file) {
-			        Upload.upload({
-			            url: 'upload/stream',
-			            method: 'POST',
-			            file: file
-			        })
-			        if(file !== null){
+                	if(file !== null){
+				        Upload.upload({
+				            url: 'upload/stream',
+				            method: 'POST',
+				            file: file
+				        });
 				        if (file.type === "audio/wav") 
 				        	$scope.uploadAudioStatus="File was uploaded";
 				        else if (file.type === "text/plain")
