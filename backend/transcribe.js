@@ -13,8 +13,8 @@ exports.transcribedText = function(req, res) {
         filePath = fs.readdirSync(__dirname+'/../upload_audio/');
       else if (selectedInput === 'micro')
         filePath = fs.readdirSync(__dirname+'/../recorded_audio/');
-
-      var originalText = fs.readFileSync(__dirname+"/../upload_text/savecode.txt","UTF-8").toLowerCase();
+      var textFilePath = fs.readdirSync(__dirname+'/../upload_text/');
+      var originalText = fs.readFileSync(__dirname+'/../upload_text/'+textFilePath[0],"UTF-8").toLowerCase();
       var diffObject;
       var result;
       if (filePath.length !== 0){
