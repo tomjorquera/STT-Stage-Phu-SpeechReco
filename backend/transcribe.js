@@ -27,6 +27,7 @@ exports.transcribedText = function(req, res) {
             result = appSpeech.transcribeSync(__dirname+'/../upload_audio/'+filePath[0]);
             fs.unlinkSync(__dirname+'/../upload_audio/'+filePath[0]);
             diffObject = jsdiff.diffWords(originalText, result);
+            fs.unlinkSync(__dirname+'/../upload_text/'+textFilePath[0]);
             res.json({
               transcribedText: result,
               compareObject: diffObject,
