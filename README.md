@@ -24,7 +24,7 @@ With Bower and Grunt.
 
 5. Go into the project directory and install project dependencies
 
-        cd angular-express-skel
+        cd SpeechReco
         npm install
         bower install
 
@@ -54,16 +54,28 @@ With Bower and Grunt.
         directives.js   --> custom angular directives
         filters.js      --> custom angular filters
         services.js     --> custom angular services
+        factories.js    --> custom angular factories
       views/
         index.jade        --> main page for app
         footer.jade       --> footer for app
         layout.jade       --> doctype, title, head boilerplate
           partials/         --> angular view partials (partial jade templates)
-           partial1.jade
-           partial2.jade
+           accueilPartial.jade      --> when no input option is choosen
+           choose-input.jade        --> choose input option template
+           audioFilePartial.jade    --> when you choose "audio file" option for input
+           microPartial.jade        --> when you choose "micro" option for input
+           corpusPartial.jade       --> when you choose "corpus" option for input
+           choose-file.jade         --> choose file by clicking button template
+           drag-box.jade            --> choose file by dragging file template          
+           choose-tool.jade         --> choose toolkit for transcribing template
+           transcribe-audio.jade    --> transcript result template
+           audio-record.jade        --> recording audio application template
+
     backend/
       api.js            --> route for serving JSON
       index.js          --> route for serving HTML pages and partials
+      transcribe.js     --> backend application to transcribe audio and give the transcript result
+      upload.js         --> backend application to upload a file or a record audio on server
       
 ## Next steps 
 
