@@ -8,7 +8,6 @@ var express = require('express'),
   http = require('http'),
   path = require('path'),
   busboy = require('connect-busboy'), //middleware for form/file upload
-  testnodeJava = require('./backend/testnodeJava'),
   transcribe = require('./backend/transcribe'),
   upload = require('./backend/upload');
 
@@ -44,7 +43,6 @@ if (env === 'production') {
   // TODO
 }
 
-
 /**
  * Routes
  */
@@ -55,7 +53,6 @@ app.get('/partials/:name', routes.partials);
 
 // API
 app.get('/api/name', api.name);
-app.get('/testnodeJava/os', testnodeJava.osName);
 app.get('/transcribe/:tool/:inputtype', transcribe.transcribedText);
 
 // redirect all others to the index (HTML5 history)

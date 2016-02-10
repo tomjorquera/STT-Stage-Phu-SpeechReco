@@ -38,15 +38,17 @@ angular.module('myApp.directives', []).
 				}
 
 				$scope.upload = function (file) {
+					$scope.uploadAudioStatus="";
+					$scope.uploadTextStatus="";
 			        Upload.upload({
 			            url: 'upload/stream',
 			            method: 'POST',
 			            file: file
 			        })
 			        if (file.type === "audio/wav") 
-			        	$scope.uploadAudioStatus="File was uploaded";
+			        	$scope.uploadAudioStatus="Audio file was uploaded";
 			        else if (file.type === "text/plain")
-			        	$scope.uploadTextStatus="File was uploaded";
+			        	$scope.uploadTextStatus="Text file was uploaded";
 			    };
 			},
 		}
@@ -56,9 +58,8 @@ angular.module('myApp.directives', []).
 			restrict: 'E',
 			templateUrl: 'partials/choose-file',
 			controller: function($scope, Upload){
-				var uploadTextStatus = document.getElementById('uploadTextStatus');
-				var uploadAudioStatus = document.getElementById('uploadAudioStatus');
-				var uploadStatus = document.getElementById('uploadStatus');
+				$scope.uploadAudioStatus="";
+				$scope.uploadTextStatus="";
                 $scope.upload = function (file) {
                 	if(file !== null){
 				        Upload.upload({
@@ -67,9 +68,9 @@ angular.module('myApp.directives', []).
 				            file: file
 				        });
 				        if (file.type === "audio/wav") 
-				        	$scope.uploadAudioStatus="File was uploaded";
+				        	$scope.uploadAudioStatus="Audio file was uploaded";
 				        else if (file.type === "text/plain")
-				        	$scope.uploadTextStatus="File was uploaded";
+				        	$scope.uploadTextStatus="Text file was uploaded";
 				    }
 			    }; 
 			}

@@ -72,7 +72,6 @@ With Bower and Grunt.
            choose-tool.jade         --> choose toolkit for transcribing template
            transcribe-audio.jade    --> transcript result template
            audio-record.jade        --> recording audio application template
-
     backend/
       api.js            --> route for serving JSON
       index.js          --> route for serving HTML pages and partials
