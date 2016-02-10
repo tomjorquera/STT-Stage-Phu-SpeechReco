@@ -10,7 +10,7 @@ With Bower and Grunt.
 
         git clone https://github.com/Mignastor/SpeechReco.git
 
-2. install node.js
+2. install node.js, bower, maven
 
 3. install the npm dependencies
 
@@ -27,6 +27,7 @@ With Bower and Grunt.
         cd SpeechReco
         npm install
         bower install
+        mvn assembly:assembly -DdescriptorId=jar-with-dependencies
 
 6. Launch it
 
@@ -43,6 +44,7 @@ With Bower and Grunt.
     app.js              --> app config
     package.json        --> for npm
     bower.json          --> for bower
+    pom.xml             --> for mvn
     Gruntfile.js        --> tasks for linter and dev
     .bowerrc            --> config file for bower
     frontend/           --> all of the files to be used in on the client side

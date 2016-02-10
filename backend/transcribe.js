@@ -4,8 +4,6 @@ exports.transcribedText = function(req, res) {
   var selectedInput = req.params.inputtype;
 
   if (selectedTool === 'sphinx4'){  
-      var java = require('java');
-      java.classpath.push(__dirname+"/lib/speechtotext.jar");
       var jsdiff = require('diff');
       var fs = require('fs-extra');
       var filePath;
@@ -19,12 +17,9 @@ exports.transcribedText = function(req, res) {
       if (filePath.length !== 0 && textFilePath.length !== 0){
         var originalText = fs.readFileSync(__dirname+'/../upload_text/'+textFilePath[0],"UTF-8").toLowerCase();
         if(filePath[0].indexOf('.wav')!==-1){
-          //execute code java de sphinx-4 par node-java
-          var stt = java.import("AppTestSpeechReco");
-          var appSpeech = new stt();
-          //2 cases of transcibe
+          //2 cases of transcibing
           if (selectedInput === 'audio') {
-            result = appSpeech.transcribeSync(__dirname+'/../upload_audio/'+filePath[0]);
+            result = transcribeBySphinx(__dirname+'/../upload_audio/'+filePath[0]);
             diffObject = jsdiff.diffWords(originalText, result);
             fs.unlinkSync(__dirname+'/../upload_text/'+textFilePath[0]);
             fs.unlinkSync(__dirname+'/../upload_audio/'+filePath[0]);
@@ -35,7 +30,7 @@ exports.transcribedText = function(req, res) {
             });
           }
           else if (selectedInput === 'micro') {
-            result = appSpeech.transcribeSync(__dirname+'/../recorded_audio/'+filePath[0]);
+            result = transcribeBySphinx(__dirname+'/../recorded_audio/'+filePath[0]);
             fs.unlinkSync(__dirname+'/../recorded_audio/'+filePath[0]);
             res.json({
               transcribedText: result,
@@ -88,4 +83,47 @@ exports.transcribedText = function(req, res) {
       originalTextExport: "",
     });
   }
+
+  function transcribeBySphinx(filePath){
+    var java = require('java');
+    java.classpath.push(__dirname+"/../target/sphinx-4-lib-1.0-SNAPSHOT-jar-with-dependencies.jar");
+
+    var IOException = java.import("java.io.IOException");
+    var e = new IOException();
+    //add sphinx-4 librairie
+    
+    //Configuration
+    var Configuration = java.import("edu.cmu.sphinx.api.Configuration");
+    var FileInputStream = java.import("java.io.FileInputStream");
+    var SpeechResult = java.import("edu.cmu.sphinx.api.SpeechResult");
+    var Recognizer = java.import("edu.cmu.sphinx.api.StreamSpeechRecognizer");
+
+    var configuration = new Configuration();
+    var fileInputStream = new FileInputStream(filePath);
+
+    // Set path to acoustic model.
+    configuration.setAcousticModelPathSync("resource:/edu/cmu/sphinx/models/en-us/en-us");
+    // Set path to dictionary.
+    configuration.setDictionaryPathSync("resource:/edu/cmu/sphinx/models/en-us/cmudict-en-us.dict");
+    // Set language model.
+    configuration.setLanguageModelPathSync("resource:/edu/cmu/sphinx/models/en-us/en-us.lm.bin");
+    
+    try{
+      var recognizer = new Recognizer(configuration);
+    }
+    catch (e){
+      console.log(e.cause.getMessageSync());
+    }
+
+    var resultFinal = "";
+
+    recognizer.startRecognitionSync(fileInputStream);
+    var result;
+    while ((result = recognizer.getResultSync()) != null) {
+      resultFinal +=  result.getHypothesisSync()+" ";
+    }
+    recognizer.stopRecognitionSync();
+    // Print utterance string without filler words.
+    return resultFinal;
+  };  
 };

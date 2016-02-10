@@ -42,7 +42,7 @@ exports.uploadFile = function(req, res, next){
         fstream = fs.createWriteStream(dirUploadFolder+filename);
         file.pipe(fstream);
         fstream.on('close', function () {    
-          console.log("Upload Finished of " + filename);       
+          //console.log("Upload Finished of " + filename);       
           res.end();
         });
       }
