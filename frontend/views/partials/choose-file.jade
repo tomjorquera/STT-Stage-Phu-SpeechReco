@@ -8,3 +8,8 @@ form(name='form')
   .btn.btn-default(ngf-select='upload($file)', ng-model='file', name='file', ngf-pattern="'text/plain'", ngf-accept="'text/plain'", ngf-max-size='20MB') Select Original Text
   &nbsp; &nbsp;
   {{uploadTextStatus}}
+br
+h5 *** Note ***
+h5 Make sure that your audio file have the options required of the toolkit you want to use:
+h5 Kaldi requires audio with Sample rate: 8000, Bits per sample: 16, Channel: 1
+h5 Sphinx-4 requires audio with Sample rate: 16000, Bits per sample: 16, Channel: 1

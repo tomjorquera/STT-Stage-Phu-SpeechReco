@@ -9,7 +9,8 @@ var express = require('express'),
   path = require('path'),
   busboy = require('connect-busboy'), //middleware for form/file upload
   transcribe = require('./backend/transcribe'),
-  upload = require('./backend/upload');
+  upload = require('./backend/upload'),
+  convert = require('./backend/convert');
 
 var app = module.exports = express();
 
@@ -50,17 +51,16 @@ if (env === 'production') {
 // serve index and view partials
 app.get('/', routes.index);
 app.get('/partials/:name', routes.partials);
-
 // API
 app.get('/api/name', api.name);
+//transcribe audio
 app.get('/transcribe/:tool/:inputtype', transcribe.transcribedText);
-
-// redirect all others to the index (HTML5 history)
-app.get('*', routes.index);
-
+//convert audio
+app.get('/convert/:toolname/:inputtype', convert.convertAudio);
 //upload file
 app.post('/upload/:datatype', upload.uploadFile);
-
+// redirect all others to the index (HTML5 history)
+app.get('*', routes.index);
 /**
  * Start Server
  */

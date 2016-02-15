@@ -14,29 +14,24 @@ angular.module('myApp.directives', []).
 			controller: function($scope, Upload){
 				//Changement de la couleur
 				var el = document.querySelector('#drop');
-
 				el.ondragover = function() {
 					this.className = "hover";
 					this.innerHTML = "Drop the file";
 					return false;
 				}
-
 				el.ondragleave =  function(){
 					this.className = "";
 					this.innerHTML = "Drop your file here";
 					return false;
 				}
-
 				el.ondrop = function(e){
 					e.preventDefault();
 					this.className="";
 					this.innerHTML = "Drop your file here";
-
 					//uploading file
 					var uploadFile = e.dataTransfer.files[e.dataTransfer.files.length-1];
 					$scope.upload(uploadFile);					
 				}
-
 				$scope.upload = function (file) {
 					$scope.uploadAudioStatus="";
 					$scope.uploadTextStatus="";
@@ -45,7 +40,7 @@ angular.module('myApp.directives', []).
 			            method: 'POST',
 			            file: file
 			        })
-			        if (file.type === "audio/wav") 
+			        if (file.type === "audio") 
 			        	$scope.uploadAudioStatus="Audio file was uploaded";
 			        else if (file.type === "text/plain")
 			        	$scope.uploadTextStatus="Text file was uploaded";
@@ -137,6 +132,8 @@ angular.module('myApp.directives', []).
 					    }).
 					    success(function(data, status, headers, config) {
 					      console.log(data.transcribedText);
+					      $scope.uploadAudioStatus="";
+						  $scope.uploadTextStatus="";
 					      $scope.isShow = false;
 					      $scope.transcribedText = data.transcribedText;
 					      //affichage de comparaison
@@ -148,14 +145,13 @@ angular.module('myApp.directives', []).
 							        // green for additions, red for deletions
 							        // grey for common parts
 							        var color = part.added ? 'green' :
-							          part.removed ? 'red' : 'black';
+							          part.removed ? 'red' : 'grey';
 							        var span = document.createElement('span');
 							        span.style.color = color;
 							        span.appendChild(document
 							          .createTextNode(part.value));
 							        display.appendChild(span);
 							      });
-							      //$scope.compareObject = data.compareObject;
 							      $scope.originalText = data.originalTextExport;
 						       }
 						   }
@@ -315,6 +311,34 @@ angular.module('myApp.directives', []).
 			          $scope.link ="";
 			          break;
 			      };
+				}
+			}
+		};
+	}).
+	directive('convertAudio',function(){
+		return {
+			restrict: 'E',
+			templateUrl: 'partials/convert-audio',
+			controller: function($scope, $http, toolSelectedFactory){
+				$scope.showIcon = false;
+				$scope.convertMsg;
+			    $scope.convertAudio = function(){
+			    	$scope.showIcon = true;
+			    	var toolName = toolSelectedFactory.getSelectedTool();
+					var inputType = location.href.substr(location.href.lastIndexOf('/'));
+					console.log('/convert/'+toolName+inputType);
+			    	$http({
+		      			method: 'GET',
+		      			url: '/convert/'+toolName+inputType,
+		    		}).
+            		success(function(data, status, headers, config) {
+            			$scope.showIcon = false;
+            			console.log(data.convertMsg);
+            			$scope.convertMsg = data.convertMsg;
+            		}).
+            		error(function(data, status, headers, config) {
+		      			console.log('Error!');
+		    		});
 				}
 			}
 		};
