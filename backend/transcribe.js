@@ -20,7 +20,10 @@ exports.transcribedText = function(req, res) {
         console.log('Transcribe by Sphinx-4 starting');
         var java = require('java');
         var result = transcribeBySphinx(audioFile);
-        //fs.unlinkSync(audioFile); => not possible to delete the audio file bcs it will be deleted before transcribe function is done  
+        //put fs.unlinkSync(audioFile) in nexTick to ensure that audio file will only be deleted when the transcript is done
+        process.nextTick(function(){
+          fs.unlinkSync(audioFile);  
+        });
         switch (selectedInput){//2 cases of input (audio or micro)
           case 'audio':
             if (textFile !== 'error'){

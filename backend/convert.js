@@ -24,10 +24,10 @@ exports.convertAudio = function(req, res) {
             case "Sphinx-4":
                 var exec = require('child_process').exec;
                 var cmd1 = 'cd '+audioFolder;
-                var cmd2 = 'sox '+audioName+' -c 1 -r 16000 -b 16 0-converted.wav';
+                var cmd2 = 'sox '+audioName+' -c 1 -r 16000 -b 16 '+audioName+'-convertedforsphinx.wav';
                 exec(cmd1+' ; '+cmd2, function(error, stdout, stderr) {
                     console.log('convert ok');
-                    fs.unlinkSync(audioFolder + '/' + (fs.readdirSync(audioFolder))[1]);
+                    fs.unlinkSync(audioFolder + '/' + audioName);
                     res.json({
                         convertMsg: 'Convert ok!!',
                     });
@@ -36,11 +36,11 @@ exports.convertAudio = function(req, res) {
             case "Kaldi":
                 var exec = require('child_process').exec;
                 var cmd1 = 'cd '+audioFolder;
-                var cmd2 = 'sox '+audioName+' -c 1 -r 8000 -b 16 0-converted.wav';
+                var cmd2 = 'sox '+audioName+' -c 1 -r 8000 -b 16 '+audioName+'-convertedforkaldi.wav';
                 console.log(cmd1+' ; '+cmd2);
                 exec(cmd1+' ; '+cmd2, function(error, stdout, stderr) {
                     console.log('convert ok');
-                    fs.unlinkSync(audioFolder + '/' + (fs.readdirSync(audioFolder))[1]);
+                    fs.unlinkSync(audioFolder + '/' + audioName);
                     res.json({
                         convertMsg:'Convert ok!!'
                     });
