@@ -30,5 +30,14 @@ angular.module('myApp.factories', []).
 			}
 		};
 		return selectedTool;
+	}).
+	factory('mySocket', function (socketFactory) {
+	  	var myIoSocket = io.connect('http://localhost:8080/');
+
+		mySocket = socketFactory({
+			ioSocket: myIoSocket
+		});
+
+		return mySocket;
 	})
 ;

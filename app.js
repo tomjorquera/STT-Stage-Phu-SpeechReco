@@ -10,7 +10,8 @@ var express = require('express'),
   busboy = require('connect-busboy'), //middleware for form/file upload
   transcribe = require('./backend/transcribe'),
   upload = require('./backend/upload'),
-  convert = require('./backend/convert');
+  convert = require('./backend/convert'),
+  socket = require('./backend/websocket');
 
 var app = module.exports = express();
 
@@ -61,10 +62,15 @@ app.get('/convert/:toolname/:inputtype', convert.convertAudio);
 app.post('/upload/:datatype', upload.uploadFile);
 // redirect all others to the index (HTML5 history)
 app.get('*', routes.index);
+
 /**
  * Start Server
  */
+var server = http.createServer(app);
 
-http.createServer(app).listen(app.get('port'), function () {
+server.listen(app.get('port'), function () {
   console.log('Express server listening on port ' + app.get('port'));
 });
+
+var initSocket = socket.init(server);
+

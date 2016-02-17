@@ -1,15 +1,11 @@
-"use strict";
+//"use strict";
 
 exports.transcribedText = function(req, res) {
-  console.log(123);
   var url = require('url');
   var fs = require('fs-extra');
+  var socket = require('./websocket.js').getSocket();
   var selectedTool = req.params.tool;
   var selectedInput = req.params.inputtype;
-
-  //convert data
- // convertAudio(getData("audio", convert),selectedTool);
-
   //get data 
   var textFile = getData("text");
   if (selectedInput === 'audio')
@@ -21,46 +17,52 @@ exports.transcribedText = function(req, res) {
     switch (selectedTool) {    
       case 'sphinx4':    
         //transcribe data to text 
+        /*console.log('Transcribe by Sphinx-4 starting');
         var result = transcribeBySphinx(audioFile);
+        console.log(result);*/
         //fs.unlinkSync(audioFile);
         switch (selectedInput){
           case 'audio':
             var originalText = fs.readFileSync(textFile,"UTF-8").toLowerCase(); 
             //fs.unlinkSync(textFile);
+            var result = transcribeBySphinx(audioFile);
             res.json({
               transcribedText: result,
               compareObject: campareText(result, originalText),
               originalTextExport: originalText,
             });
-            res.end();
             break;
           case 'micro':
-            res.json({
+            res.json('send msg', {
               transcribedText: result,
               compareObject: "No needed for an input by micro",
               originalTextExport: "No needed for an input by micro",
             });
-            res.end();
           default:
             break;
         }; 
         break;   
       case 'kaldi':
+        res.send(202);
         switch (selectedInput){
           case 'audio':
             var kaldiRoot = __dirname+'/lib/kaldi-trunk';
+            console.log('transcribe by kaldi starting');
             transcribeByKaldi(kaldiRoot,audioFile, callbackAudio);
             function callbackAudio(result){
+              console.log(11111);
+              console.log(result);
               var textFile = getData("text");
               var originalText = fs.readFileSync(textFile,"UTF-8").toLowerCase(); 
               //fs.unlinkSync(textFile);
               //fs.unlinkSync(audioFile);
-              res.json({
+              console.log("kaldi renvoie resultat");
+              socket.emit('send msg', {
                 transcribedText: result,
                 compareObject: campareText(result, originalText),
                 originalTextExport: originalText,
               });
-              res.end();
+              console.log("kaldi fini");
             };
             break;
           case 'micro':
@@ -71,12 +73,11 @@ exports.transcribedText = function(req, res) {
               var originalText = fs.readFileSync(textFile,"UTF-8").toLowerCase(); 
               fs.unlinkSync(textFile);
               fs.unlinkSync(audioFile);
-              res.json({
+              socket.emit('send msg',{
                 transcribedText: result,
                 compareObject: "No needed for an input by micro",
                 originalTextExport: "No needed for an input by micro",
               });
-              res.end();
             };
             break;
           default:
@@ -84,7 +85,7 @@ exports.transcribedText = function(req, res) {
         }
         break;
       case 'pocketsphinx':
-        res.json({
+        socket.emit('send msg',{
           transcribedText: "pocketSphinx is not ready to be used for this moment.",
           compareObject: "",
           originalTextExport: "",
@@ -92,7 +93,7 @@ exports.transcribedText = function(req, res) {
         res.end();
         break;
       default:
-        res.json({
+        socket.emit('send msg',{
           transcribedText: 'Tell us which tool that you would like to use, please',
           compareObject: "",
           originalTextExport: "",
@@ -103,7 +104,7 @@ exports.transcribedText = function(req, res) {
   else {
     switch (selectedInput){
       case 'audio':
-        res.json({
+        socket.emit('send msg',{
           transcribedText: "Text file or/and audio file are missing. Upload your files first...",
           compareObject: "",
           originalTextExport: "",
@@ -111,7 +112,7 @@ exports.transcribedText = function(req, res) {
         res.end();
         break;
       case 'micro':
-        res.json({
+        socket.emit('send msg',{
           transcribedText: "Please give us a recorded audio",
           compareObject: "No needed for an input by micro",
           originalTextExport: "No needed for an input by micro",
@@ -122,23 +123,25 @@ exports.transcribedText = function(req, res) {
         break;
     };
   }
-
+2
   function transcribeBySphinx(filePath){
     var java = require('java');
-    java.classpath.push(__dirname+"/../target/sphinx-4-lib-1.0-SNAPSHOT-jar-with-dependencies.jar");
-
-    var IOException = java.import("java.io.IOException");
-    var e = new IOException();
+    //java.classpath.push(__dirname+"/../target/sphinx-4-lib-1.0-SNAPSHOT-jar-with-dependencies.jar");
+    java.classpath.push(__dirname+'/lib/speechtotext.jar');
+    var S2T = java.import('AppTestSpeechReco');
+    var appSpeech = new S2T();
+    var resultFinal = appSpeech.transcribeSync(filePath);
+    
     //add sphinx-4 librairie
     
     //Configuration
-    var Configuration = java.import("edu.cmu.sphinx.api.Configuration");
+    /*var Configuration = java.import("edu.cmu.sphinx.api.Configuration");
     var FileInputStream = java.import("java.io.FileInputStream");
     var SpeechResult = java.import("edu.cmu.sphinx.api.SpeechResult");
     var Recognizer = java.import("edu.cmu.sphinx.api.StreamSpeechRecognizer");
 
     var configuration = new Configuration();
-    var fileInputStream = new FileInputStream(filePath);
+    
 
     // Set path to acoustic model.
     configuration.setAcousticModelPathSync("resource:/edu/cmu/sphinx/models/en-us/en-us");
@@ -147,34 +150,48 @@ exports.transcribedText = function(req, res) {
     // Set language model.
     configuration.setLanguageModelPathSync("resource:/edu/cmu/sphinx/models/en-us/en-us.lm.bin");
     
-    try{
+    //try{
       var recognizer = new Recognizer(configuration);
-    }
-    catch (e){
-      console.log(e.cause.getMessageSync());
-    }
+    //}
+    //catch (e){
+    //  console.log(e.cause.getMessageSync());
+    //}
 
     var resultFinal = "";
-    console.log(111);
+    console.log(1);
+    var fileInputStream = new FileInputStream(filePath);
+    console.log(2);
     recognizer.startRecognitionSync(fileInputStream);
+    console.log(3);
     var result;
     while ((result = recognizer.getResultSync()) !== null) {
       resultFinal = resultFinal + result.getHypothesisSync() + ' ';
+      console.log(result.getHypothesisSync());
+      console.log(4);
     }
+
     recognizer.stopRecognitionSync();
-    console.log(222);
-    // Print utterance string without filler words.
+    console.log(5);*/
     return resultFinal;
   };  
 
   function transcribeByKaldi(kaldiPath, filePath, callback){
+    console.log('transcribe by kaldi starting');
     var exec = require('child_process').exec;
     var cmd1 = 'cd '+kaldiPath+'/egs/online-nnet2/';
     var cmd2 = './run.sh '+kaldiPath+' '+filePath;
     console.log(cmd1+' ; '+cmd2);
     exec(cmd1+' ; '+cmd2, function(error, stdout, stderr) {
-      console.log(stdout);
-      callback(stdout);
+      if (stdout !== ""){
+        callback(stdout);
+      } else {
+        socket.emit('send error', {
+          transcribedText:" Error of transcript. Maybe the audio is not suitable. Please convert it.."
+        });
+      }
+      if (error !== null) {
+          console.log('exec error: ' + error);
+        }
     }); 
   };
 
