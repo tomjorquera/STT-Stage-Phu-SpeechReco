@@ -17,15 +17,15 @@ exports.transcribedText = function(req, res) {
     switch (selectedTool) {    
       case 'sphinx4':    
         //transcribe data to text 
-        /*console.log('Transcribe by Sphinx-4 starting');
+        console.log('Transcribe by Sphinx-4 starting');
         var result = transcribeBySphinx(audioFile);
-        console.log(result);*/
+        //console.log(result);
         //fs.unlinkSync(audioFile);
         switch (selectedInput){
           case 'audio':
             var originalText = fs.readFileSync(textFile,"UTF-8").toLowerCase(); 
             //fs.unlinkSync(textFile);
-            var result = transcribeBySphinx(audioFile);
+            result = transcribeBySphinx(audioFile);
             res.json({
               transcribedText: result,
               compareObject: campareText(result, originalText),
@@ -33,7 +33,8 @@ exports.transcribedText = function(req, res) {
             });
             break;
           case 'micro':
-            res.json('send msg', {
+            result = transcribeBySphinx(audioFile);
+            res.json({
               transcribedText: result,
               compareObject: "No needed for an input by micro",
               originalTextExport: "No needed for an input by micro",
@@ -69,15 +70,14 @@ exports.transcribedText = function(req, res) {
             var kaldiRoot = __dirname+'/lib/kaldi-trunk';
             transcribeByKaldi(kaldiRoot,audioFile, callbackMicro);
             function callbackMicro(result){
-              var textFile = getData("text");
-              var originalText = fs.readFileSync(textFile,"UTF-8").toLowerCase(); 
-              fs.unlinkSync(textFile);
-              fs.unlinkSync(audioFile);
+              //fs.unlinkSync(audioFile);
+              console.log("kaldi renvoie resultat");
               socket.emit('send msg',{
                 transcribedText: result,
                 compareObject: "No needed for an input by micro",
                 originalTextExport: "No needed for an input by micro",
               });
+              console.log("kaldi fini");
             };
             break;
           default:

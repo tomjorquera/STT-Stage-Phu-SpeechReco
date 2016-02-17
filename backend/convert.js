@@ -14,9 +14,9 @@ exports.convertAudio = function(req, res) {
             audioFolder = __dirname+'/../upload_audio';
             audioName = (fs.readdirSync(audioFolder))[0];
             break;
-        case 'micro':
+        case 'yourmicro':
             audioFolder = __dirname+'/../recorded_audio';
-            var audioName = (fs.readdirSync(audioFolder))[0];
+            audioName = (fs.readdirSync(audioFolder))[0];
             break;
         default:
             break;
@@ -39,6 +39,7 @@ exports.convertAudio = function(req, res) {
             var exec = require('child_process').exec;
             var cmd1 = 'cd '+audioFolder;
             var cmd2 = 'sox '+audioName+' -c 1 -r 8000 0-converted.wav';
+            console.log(cmd1+' ; '+cmd2);
             exec(cmd1+' ; '+cmd2, function(error, stdout, stderr) {
                 console.log('convert ok');
                 fs.unlinkSync(audioFolder + '/' + (fs.readdirSync(audioFolder))[1]);

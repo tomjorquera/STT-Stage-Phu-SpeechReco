@@ -114,12 +114,76 @@ angular.module('myApp.directives', []).
 		return {
 			restrict: 'E',
 			templateUrl: 'partials/transcribe-audio',
-			controller: function($scope, $http, toolSelectedFactory){
+			controller: function($scope, $http, toolSelectedFactory, mySocket){
 				$scope.isShow = false;
 				var adr = location.href.substr(location.href.lastIndexOf('/'));
-				if (adr === '/audiofile'){
-					$scope.link=toolSelectedFactory.getTranscribeLink();
-					document.getElementById('transcribeButton').addEventListener('click', function(){
+				console.log(adr);
+				//take result if it's sent by socket (for kaldi case)
+				mySocket.on('send msg',function(data){	
+					if (adr === '/audiofile'){
+						console.log(data.transcribedText);
+						$scope.isShow = false;
+						$scope.transcribedText = data.transcribedText;
+						//affichage de comparaison
+						if (data.compareObject !== undefined){
+						  if (data.compareObject !== ""){
+						      var display = document.getElementById("compareObject");
+						      display.innerHTML = "Compare text here : ";
+						      data.compareObject.forEach(function(part){
+						        // green for additions, red for deletions
+						        // grey for common parts
+						        var color = part.added ? 'green' :
+						          part.removed ? 'red' : 'grey';
+						        var span = document.createElement('span');
+						        span.style.color = color;
+						        span.appendChild(document
+						          .createTextNode(part.value));
+						        display.appendChild(span);
+						      });
+						      $scope.originalText = data.originalTextExport;
+						      mySocket.disconnect();
+						   }
+						}
+						else{ 
+							$scope.errorMessage = "Choose a toolkit before!";
+							mySocket.disconnect();
+						}
+					}
+					else if (adr === '/yourmicro'){
+						$scope.isShow = false;
+						if (data.compareObject !== undefined){   
+							$scope.errorMessage=""; 
+							console.log(data.transcribedText);
+							$scope.transcribedText = data.transcribedText;
+							//affichage de comparaison
+							var display = document.getElementById("compareObject");
+							display.innerHTML = "Compare text here : "+data.compareObject;
+							//$scope.compareObject = data.compareObject;
+							$scope.originalText = data.originalTextExport;
+						}
+						else $scope.errorMessage = "Choose a toolkit before!";
+					}
+				});	
+				mySocket.on('send error', function(data){
+					$scope.isShow = false;
+					$scope.transcribedText = data.transcribedText;
+					var display = document.getElementById("compareObject");
+					display.innerHTML = "";
+					$scope.originalText = "";
+					mySocket.disconnect();
+				});
+				mySocket.disconnect();
+				//resquest function when click transcribe button
+				$scope.trancribeRequest =function (){
+					if (toolSelectedFactory.getTranscribeLink() === "/transcribe/kaldi"){
+						//var mySocket = io.connect('http://localhost:8080/');
+						//waiting for  socket
+						mySocket.connect('http://localhost:8080/',{'forceNew':true });
+					}
+					$scope.uploadAudioStatus="";
+					$scope.uploadTextStatus="";
+					if (adr === '/audiofile'){
+						$scope.link=toolSelectedFactory.getTranscribeLink();
 						$scope.errorMessage ="";
 						$scope.isShow = true;
 						var link = toolSelectedFactory.getTranscribeLink();
@@ -131,14 +195,15 @@ angular.module('myApp.directives', []).
 					      url: toolSelectedFactory.getTranscribeLink()+'/audio'
 					    }).
 					    success(function(data, status, headers, config) {
-					      console.log(data.transcribedText);
-					      $scope.uploadAudioStatus="";
-						  $scope.uploadTextStatus="";
-					      $scope.isShow = false;
-					      $scope.transcribedText = data.transcribedText;
-					      //affichage de comparaison
-					      if (data.compareObject !== undefined){
-						      if (data.compareObject !== ""){
+					      console.log('requete accepte');
+					      //take result when it's sent by res.json (sphinx4 case)
+					      if (toolSelectedFactory.getTranscribeLink() === "/transcribe/sphinx4"){
+					      	console.log(data.transcribedText);
+							$scope.isShow = false;
+							$scope.transcribedText = data.transcribedText;
+							//affichage de comparaison
+							if (data.compareObject !== undefined){
+							  if (data.compareObject !== ""){
 							      var display = document.getElementById("compareObject");
 							      display.innerHTML = "Compare text here : ";
 							      data.compareObject.forEach(function(part){
@@ -153,18 +218,17 @@ angular.module('myApp.directives', []).
 							        display.appendChild(span);
 							      });
 							      $scope.originalText = data.originalTextExport;
-						       }
-						   }
-						  else $scope.errorMessage = "Choose a toolkit before!";
+							   }
+							}
+					else $scope.errorMessage = "Choose a toolkit before!";
+					      }
 					    }).
 					    error(function(data, status, headers, config) {
 					      $scope.transcribedText = 'Error!';
 					    });
-					});
-				}
-				else if (adr === '/yourmicro'){
-					$scope.link=toolSelectedFactory.getTranscribeLink();
-					document.getElementById('transcribeButton').addEventListener('click', function(){
+					}
+					else if (adr === '/yourmicro'){
+						$scope.link=toolSelectedFactory.getTranscribeLink();
 						document.getElementById("compareObject").innerHTML = "Compare text here :";
 						$scope.errorMessage ="";
 						$scope.isShow = true;
@@ -174,24 +238,28 @@ angular.module('myApp.directives', []).
 					      url: toolSelectedFactory.getTranscribeLink()+'/micro'
 					    }).
 					    success(function(data, status, headers, config) {
-					      $scope.isShow = false;
-					      if (data.compareObject !== undefined){   
-					      	  $scope.errorMessage=""; 
-						      console.log(data.transcribedText);
-						      $scope.transcribedText = data.transcribedText;
-						      //affichage de comparaison
-						      var display = document.getElementById("compareObject");
-						      display.innerHTML = "Compare text here : "+data.compareObject;
-						      //$scope.compareObject = data.compareObject;
-						      $scope.originalText = data.originalTextExport;
-						  }
-						  else $scope.errorMessage = "Choose a toolkit before!";
+							console.log('requete accepte');
+							//take result when it's sent by res.json (sphinx4 case)
+					      	if (toolSelectedFactory.getTranscribeLink() === "/transcribe/sphinx4"){
+								$scope.isShow = false;
+								if (data.compareObject !== undefined){   
+									$scope.errorMessage=""; 
+									console.log(data.transcribedText);
+									$scope.transcribedText = data.transcribedText;
+									//affichage de comparaison
+									var display = document.getElementById("compareObject");
+									display.innerHTML = "Compare text here : "+data.compareObject;
+									//$scope.compareObject = data.compareObject;
+									$scope.originalText = data.originalTextExport;
+								}
+								else $scope.errorMessage = "Choose a toolkit before!";
+							}
 					    }).
 					    error(function(data, status, headers, config) {
 					      $scope.transcribedText = 'Error!';
 					    });
-					});
-				}
+					}
+				}	
 			},
 		}
 	}).
