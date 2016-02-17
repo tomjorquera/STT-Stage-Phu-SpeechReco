@@ -1,39 +1,46 @@
-//"use strict";
+"use strict";
 
+//main export function that sent the transcribed text, the original text and the compare object to client 
 exports.transcribedText = function(req, res) {
-  var url = require('url');
   var fs = require('fs-extra');
   var socket = require('./websocket.js').getSocket();
   var selectedTool = req.params.tool;
   var selectedInput = req.params.inputtype;
-  //get data 
+  //get data necessary which are original text and audio file (record audio or internet audio)
   var textFile = getData("text");
   if (selectedInput === 'audio')
     var audioFile = getData("audio");
   else if (selectedInput === 'micro')
     var audioFile = getData("micro");
 
-  if (textFile !== undefined && audioFile !== undefined){ //if data is all ready  
-    switch (selectedTool) {    
-      case 'sphinx4':    
-        //transcribe data to text 
+  if (audioFile !== 'error'){ //verify if all data is ready  
+    switch (selectedTool) {  //there are 3 cases of tool (3 tools)  
+      case 'sphinx4': //for sphinx 4 the response have json form
+        //execute the transcribe function to get transcribed text in result variable
         console.log('Transcribe by Sphinx-4 starting');
+        var java = require('java');
         var result = transcribeBySphinx(audioFile);
-        //console.log(result);
-        //fs.unlinkSync(audioFile);
-        switch (selectedInput){
+        //fs.unlinkSync(audioFile); => not possible to delete the audio file bcs it will be deleted before transcribe function is done  
+        switch (selectedInput){//2 cases of input (audio or micro)
           case 'audio':
-            var originalText = fs.readFileSync(textFile,"UTF-8").toLowerCase(); 
-            //fs.unlinkSync(textFile);
-            result = transcribeBySphinx(audioFile);
-            res.json({
-              transcribedText: result,
-              compareObject: campareText(result, originalText),
-              originalTextExport: originalText,
-            });
+            if (textFile !== 'error'){
+              //get the original text
+              var originalText = fs.readFileSync(textFile,"UTF-8").toLowerCase(); 
+              fs.unlinkSync(textFile);
+              result = transcribeBySphinx(audioFile);
+              res.json({
+                transcribedText: result,
+                compareObject: campareText(result, originalText),
+                originalTextExport: originalText,
+              });
+            } else 
+              res.json({
+                transcribedText: result,
+                compareObject: "",
+                originalTextExport: "",
+              });
             break;
           case 'micro':
-            result = transcribeBySphinx(audioFile);
             res.json({
               transcribedText: result,
               compareObject: "No needed for an input by micro",
@@ -42,35 +49,45 @@ exports.transcribedText = function(req, res) {
           default:
             break;
         }; 
-        break;   
-      case 'kaldi':
+        break;
+      case 'kaldi': //for kaldi the response is sent to client by socket
+        //send message 202 to client to notice the client that its request is accepted
         res.send(202);
-        switch (selectedInput){
+        //treat the client request
+        switch (selectedInput){ 
           case 'audio':
             var kaldiRoot = __dirname+'/lib/kaldi-trunk';
             console.log('transcribe by kaldi starting');
+            //kaldi function need the kaldi directory, audio file path and a function call as inputs
             transcribeByKaldi(kaldiRoot,audioFile, callbackAudio);
+            //the callback function that will transfer the socket that composes the transcribe text, original text and the campare object
             function callbackAudio(result){
-              console.log(11111);
-              console.log(result);
               var textFile = getData("text");
-              var originalText = fs.readFileSync(textFile,"UTF-8").toLowerCase(); 
-              //fs.unlinkSync(textFile);
-              //fs.unlinkSync(audioFile);
-              console.log("kaldi renvoie resultat");
-              socket.emit('send msg', {
-                transcribedText: result,
-                compareObject: campareText(result, originalText),
-                originalTextExport: originalText,
-              });
-              console.log("kaldi fini");
+              if (textFile !== 'error'){
+                var originalText = fs.readFileSync(textFile,"UTF-8").toLowerCase(); 
+                fs.unlinkSync(textFile);
+                fs.unlinkSync(audioFile);
+                console.log("kaldi renvoie resultat");
+                socket.emit('send msg', {
+                  transcribedText: result,
+                  compareObject: campareText(result, originalText),
+                  originalTextExport: originalText,
+                });
+                console.log("kaldi fini");
+              }
+              else 
+                socket.emit('send msg', {
+                  transcribedText: result,
+                  compareObject: "",
+                  originalTextExport: "",
+                });
             };
             break;
           case 'micro':
             var kaldiRoot = __dirname+'/lib/kaldi-trunk';
             transcribeByKaldi(kaldiRoot,audioFile, callbackMicro);
             function callbackMicro(result){
-              //fs.unlinkSync(audioFile);
+              fs.unlinkSync(audioFile);
               console.log("kaldi renvoie resultat");
               socket.emit('send msg',{
                 transcribedText: result,
@@ -102,28 +119,51 @@ exports.transcribedText = function(req, res) {
     }
   }
   else {
-    switch (selectedInput){
-      case 'audio':
-        socket.emit('send msg',{
-          transcribedText: "Text file or/and audio file are missing. Upload your files first...",
-          compareObject: "",
-          originalTextExport: "",
-        });
-        res.end();
-        break;
-      case 'micro':
-        socket.emit('send msg',{
-          transcribedText: "Please give us a recorded audio",
-          compareObject: "No needed for an input by micro",
-          originalTextExport: "No needed for an input by micro",
-        });
-        res.end();
-        break;
-      default:
-        break;
-    };
+    if (selectedTool === 'kaldi') {
+      switch (selectedInput){
+        case 'audio':
+          socket.emit('send msg',{
+            transcribedText: "Audio file is missing. Upload your file first...",
+            compareObject: "",
+            originalTextExport: "",
+          });
+          res.end();
+          break;
+        case 'micro':
+          socket.emit('send msg',{
+            transcribedText: "Please give us a recorded audio",
+            compareObject: "No needed for an input by micro",
+            originalTextExport: "No needed for an input by micro",
+          });
+          res.end();
+          break;
+        default:
+          break;
+      };
+    } 
+    if ((selectedTool === 'sphinx4')) {
+      switch (selectedInput){
+        case 'audio':
+          res.json('send msg',{
+            transcribedText: "Text file or/and audio file are missing. Upload your files first...",
+            compareObject: "",
+            originalTextExport: "",
+          });
+          res.end();
+          break;
+        case 'micro':
+          res.json('send msg',{
+            transcribedText: "Please give us a recorded audio",
+            compareObject: "No needed for an input by micro",
+            originalTextExport: "No needed for an input by micro",
+          });
+          res.end();
+          break;
+      };
+    }
   }
-2
+
+  //transcribe by sphinx function that give the transcribed text in outpout
   function transcribeBySphinx(filePath){
     var java = require('java');
     //java.classpath.push(__dirname+"/../target/sphinx-4-lib-1.0-SNAPSHOT-jar-with-dependencies.jar");
@@ -131,7 +171,6 @@ exports.transcribedText = function(req, res) {
     var S2T = java.import('AppTestSpeechReco');
     var appSpeech = new S2T();
     var resultFinal = appSpeech.transcribeSync(filePath);
-    
     //add sphinx-4 librairie
     
     //Configuration
@@ -175,8 +214,12 @@ exports.transcribedText = function(req, res) {
     return resultFinal;
   };  
 
+  /*
+   *transcribe by kaldi function that give the transcribed text in outpout
+   */
   function transcribeByKaldi(kaldiPath, filePath, callback){
-    console.log('transcribe by kaldi starting');
+    //use chid process of node js to call an unix command that give the transcribed text in stdout. 
+    //This stdout is the output of the function
     var exec = require('child_process').exec;
     var cmd1 = 'cd '+kaldiPath+'/egs/online-nnet2/';
     var cmd2 = './run.sh '+kaldiPath+' '+filePath;
@@ -195,18 +238,22 @@ exports.transcribedText = function(req, res) {
     }); 
   };
 
+  //get the path of data necessary when it's an audio, recorded audio or text
   function getData(typeData){
     var fs = require('fs-extra');
-    var filePath;
+    var filePath = 'error';
     switch (typeData){
       case "audio":
-        filePath = __dirname+'/../upload_audio/'+(fs.readdirSync(__dirname+'/../upload_audio/'))[0];
+        if (fs.readdirSync(__dirname+'/../upload_audio/').length !== 0)
+          filePath = __dirname+'/../upload_audio/'+(fs.readdirSync(__dirname+'/../upload_audio/'))[0];
         break;
       case "micro":
-        filePath = __dirname+'/../recorded_audio/'+(fs.readdirSync(__dirname+'/../recorded_audio/'))[0];
+        if (fs.readdirSync(__dirname+'/../recorded_audio/').length !== 0)
+          filePath = __dirname+'/../recorded_audio/'+(fs.readdirSync(__dirname+'/../recorded_audio/'))[0];
         break;
       case "text":
-        filePath = __dirname+'/../upload_text/'+(fs.readdirSync(__dirname+'/../upload_text/'))[0];
+        if (fs.readdirSync(__dirname+'/../upload_text/').length !== 0)
+          filePath = __dirname+'/../upload_text/'+(fs.readdirSync(__dirname+'/../upload_text/'))[0];
         break;
       default:
         break;
@@ -214,6 +261,7 @@ exports.transcribedText = function(req, res) {
     return filePath;
   };
 
+  //campare 2 strings and give to output the diff object that show the different btw 2 strings
   function campareText(cibleText, originalText){
     var jsdiff = require('diff');
     var diffObject = jsdiff.diffWords(originalText, cibleText);

@@ -77,3 +77,9 @@ blockquote{
     font-family: sans-serif;
 }
 
+#align div {
+  display: inline;
+  margin: 0 1em 0 1em;
+  width: 30%;
+}
+
