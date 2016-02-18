@@ -126,6 +126,8 @@ angular.module('myApp.directives', []).
 				$scope.isShow = false;
 				//adr varible is the url part that makes we know what input is choose
 				var adr = location.href.substr(location.href.lastIndexOf('/'));
+				var transcribeButton = document.getElementById('transcribe-button');
+			
 				//take result if it's sent by socket (for kaldi case)
 				mySocket.on('send msg',function(data){	
 					if (adr === '/audiofile'){
@@ -148,16 +150,11 @@ angular.module('myApp.directives', []).
 						        display.appendChild(span);
 						      });
 						      $scope.originalText = data.originalTextExport;
-						      mySocket.disconnect();
 						   }
 						   else {
 						   		var display = document.getElementById("compareObject");
 							    display.innerHTML = "Text file is missing so we can not campare it";
 						   }
-						}
-						else{ 
-							$scope.errorMessage = "Choose a toolkit before!";
-							mySocket.disconnect();
 						}
 					}
 					else if (adr === '/yourmicro'){
@@ -172,8 +169,9 @@ angular.module('myApp.directives', []).
 							//$scope.compareObject = data.compareObject;
 							$scope.originalText = data.originalTextExport;
 						}
-						else $scope.errorMessage = "Choose a toolkit before!";
 					}
+					mySocket.disconnect();
+					transcribeButton.removeAttribute("disabled");
 				});	
 				mySocket.on('send error', function(data){
 					$scope.isShow = false;
@@ -181,6 +179,7 @@ angular.module('myApp.directives', []).
 					var display = document.getElementById("compareObject");
 					display.innerHTML = "";
 					$scope.originalText = "";
+					transcribeButton.removeAttribute("disabled");
 					mySocket.disconnect();
 				});
 				mySocket.disconnect();
@@ -200,13 +199,17 @@ angular.module('myApp.directives', []).
 					$scope.uploadTextStatus="";
 					$scope.convertMsg="";
 					$scope.errorMessage ="";
+					//disable the transcribe button to make sure client can not click it twice
+					transcribeButton.setAttribute("disabled", true);
 					//when input choosen is audio file
 					if (adr === '/audiofile'){
 						//show loading icon and hide the transcribe zone
-						$scope.isShow = true;
+						$scope.isShow = true;						
+						//reset all part of transcribe template
 						document.getElementById("compareObject").innerHTML = "Compare text here :";
 						$scope.transcribedText = "";
 						$scope.originalText = "";
+						//send request to server
 						$http({
 					      method: 'GET',
 					      url: toolSelectedFactory.getTranscribeLink()+'/audio'
@@ -240,11 +243,15 @@ angular.module('myApp.directives', []).
 							    	display.innerHTML = "Text file is missing so we can not campare it";
 							   }
 							}
-							else $scope.errorMessage = "Any error happends so the compare object is undefined";
+							else {
+								$scope.errorMessage = "Any error happends so the compare object is undefined";
+							}
+							transcribeButton.removeAttribute("disabled");
 					      }
 					    }).
 					    error(function(data, status, headers, config) {
 					      $scope.transcribedText = 'Error!';
+					      transcribeButton.removeAttribute("disabled");
 					    });
 					}
 					else if (adr === '/yourmicro'){
@@ -268,10 +275,12 @@ angular.module('myApp.directives', []).
 								display.innerHTML = "Compare text here : "+data.compareObject;
 								//$scope.compareObject = data.compareObject;
 								$scope.originalText = data.originalTextExport;
+								transcribeButton.removeAttribute("disabled");
 							}
 					    }).
 					    error(function(data, status, headers, config) {
 					      $scope.transcribedText = 'Error!';
+					      transcribeButton.removeAttribute("disabled");
 					    });
 					}
 				}	
