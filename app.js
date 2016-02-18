@@ -8,7 +8,8 @@ var express = require('express'),
   http = require('http'),
   path = require('path'),
   busboy = require('connect-busboy'), //middleware for form/file upload
-  transcribe = require('./backend/transcribe'),
+  sphinx = require('./backend/sphinx4'),
+  kaldi = require('./backend/kaldi'),
   upload = require('./backend/upload'),
   convert = require('./backend/convert'),
   socket = require('./backend/websocket');
@@ -54,8 +55,10 @@ app.get('/', routes.index);
 app.get('/partials/:name', routes.partials);
 // API
 app.get('/api/name', api.name);
-//transcribe audio
-app.get('/transcribe/:tool/:inputtype', transcribe.transcribedText);
+//transcribe audio by sphinx-4
+app.get('/transcribe/sphinx4/:inputtype', sphinx.transcribeSphinx);
+//transcribe audio by kaldi
+app.get('/transcribe/kaldi/:inputtype', kaldi.transcribeKaldi);
 //convert audio
 app.get('/convert/:toolname/:inputtype', convert.convertAudio);
 //upload file

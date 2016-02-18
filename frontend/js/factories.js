@@ -32,7 +32,7 @@ angular.module('myApp.factories', []).
 		return selectedTool;
 	}).
 	factory('mySocket', function (socketFactory) {
-	  	var myIoSocket = io.connect('http://localhost:8080/');
+	  	var myIoSocket = io.connect(location.href.substr(0,location.href.lastIndexOf('/')+1));
 
 		mySocket = socketFactory({
 			ioSocket: myIoSocket
