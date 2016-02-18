@@ -39,5 +39,17 @@ angular.module('myApp.factories', []).
 		});
 
 		return mySocket;
+	}).
+	factory('clientDistinct', function(){
+		var client = {
+			name: "unknown",
+			setNameClient: function(name){
+				client.name = name;
+			},
+			getNameClient: function(){
+				return client.name;
+			},
+		};
+		return client;
 	})
 ;

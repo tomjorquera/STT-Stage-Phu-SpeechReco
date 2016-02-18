@@ -4,22 +4,20 @@ exports.convertAudio = function(req, res) {
     var fs = require('fs-extra');
     var toolName = req.params.toolname;
     var inputType =req.params.inputtype;
-    var audioName;
+    var clientName = req.params.clientname;
     var audioFolder;
-    var audioPath;
+    var audioName = clientName+'.wav';
     switch (inputType){
         case 'audiofile':
             audioFolder = __dirname+'/../upload_audio';
-            audioName = (fs.readdirSync(audioFolder))[0];
             break;
         case 'yourmicro':
             audioFolder = __dirname+'/../recorded_audio';
-            audioName = (fs.readdirSync(audioFolder))[0];
             break;
         default:
             break;
     }
-    if (audioName !== "0-converted.wav" && audioName !== undefined){
+    if (clientName !== "unknown"){
         switch (toolName){
             case "Sphinx-4":
                 var exec = require('child_process').exec;

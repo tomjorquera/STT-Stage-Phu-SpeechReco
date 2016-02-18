@@ -4,15 +4,16 @@ exports.transcribeKaldi = function(req, res) {
 	var fs = require('fs-extra');
   	var socket = require('./websocket.js').getSocket();
   	var selectedInput = req.params.inputtype;
+  	var clientName = req.params.clientname;
 
   	//get data necessary which are original text and audio file (record audio or internet audio)
 	  
 	if (selectedInput === 'audio'){
-	  	var textFile = getData("text");
-	    var audioFile = getData("audio");
+	  	var textFile = getData("text", clientName);
+	    var audioFile = getData("audio", clientName);
 	}
 	else if (selectedInput === 'micro')
-		var audioFile = getData("micro");
+		var audioFile = getData("micro", clientName);
 
 	//send message 202 to client to notice the client that its request is accepted
     res.send(202);
@@ -98,31 +99,31 @@ function transcribeByKaldi(kaldiPath, filePath, callback){
 };
 
 //get the path of data necessary when it's an audio, recorded audio or text
-  function getData(typeData){
-    var fs = require('fs-extra');
-    var filePath = 'error';
-    switch (typeData){
-      case "audio":
-        if (fs.readdirSync(__dirname+'/../upload_audio/').length !== 0)
-          filePath = __dirname+'/../upload_audio/'+(fs.readdirSync(__dirname+'/../upload_audio/'))[0];
-        break;
-      case "micro":
-        if (fs.readdirSync(__dirname+'/../recorded_audio/').length !== 0)
-          filePath = __dirname+'/../recorded_audio/'+(fs.readdirSync(__dirname+'/../recorded_audio/'))[0];
-        break;
-      case "text":
-        if (fs.readdirSync(__dirname+'/../upload_text/').length !== 0)
-          filePath = __dirname+'/../upload_text/'+(fs.readdirSync(__dirname+'/../upload_text/'))[0];
-        break;
-      default:
-        break;
-    };
-    return filePath;
-  };
+function getData(typeData, clientName){
+	var fs = require('fs-extra');
+	var filePath = 'error';
+	switch (typeData){
+		case "audio":
+			if (fs.existsSync(__dirname+'/../upload_audio/'+clientName+'.wav-convertedforkaldi.wav'))
+				filePath = __dirname+'/../upload_audio/'+clientName+'.wav-convertedforkaldi.wav';
+			break;
+		case "micro":
+			if (fs.existsSync(__dirname+'/../recorded_audio/'+clientName+'.wav-convertedforkaldi.wav'))
+				filePath = __dirname+'/../recorded_audio/'+clientName+'.wav-convertedforkaldi.wav';
+			break;
+		case "text":
+			if (fs.existsSync(__dirname+'/../upload_text/'+clientName+'.txt'))
+				filePath = __dirname+'/../upload_text/'+clientName+'.txt';
+			break;
+		default:
+			break;
+	};
+	return filePath;
+};
 
-  //campare 2 strings and give to output the diff object that show the different btw 2 strings
-  function campareText(cibleText, originalText){
-    var jsdiff = require('diff');
-    var diffObject = jsdiff.diffWords(originalText, cibleText);
-    return diffObject;
-  };
+//campare 2 strings and give to output the diff object that show the different btw 2 strings
+function campareText(cibleText, originalText){
+	var jsdiff = require('diff');
+	var diffObject = jsdiff.diffWords(originalText, cibleText);
+	return diffObject;
+};

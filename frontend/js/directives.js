@@ -12,7 +12,7 @@ angular.module('myApp.directives', []).
 		return {
 			restrict: 'E',
 			templateUrl: 'partials/drag-box',
-			controller: function($scope, Upload){
+			controller: function($scope, Upload, clientDistinct){
 				var el = document.querySelector('#drop');
 				el.ondragover = function() {
 					this.className = "hover";
@@ -35,43 +35,77 @@ angular.module('myApp.directives', []).
 				$scope.upload = function (file) {
 					$scope.uploadAudioStatus="";
 					$scope.uploadTextStatus="";
+					if (file.type === "audio/wav" && clientDistinct.getNameClient() === 'unknown'){
+			        	$scope.uploadAudioStatus=file.name+" was uploaded";
+			        	clientDistinct.setNameClient(getRandomString()+'.wav');
+			        }
+			        else if (file.type === "text/plain" && clientDistinct.getNameClient() === 'unknown'){
+			        	$scope.uploadTextStatus=file.name+" was uploaded";
+			        	clientDistinct.setNameClient(getRandomString()+'.txt');
+            		}
 			        Upload.upload({
-			            url: 'upload/stream',
+			            url: 'upload/stream/'+clientDistinct.getNameClient(),
 			            method: 'POST',
 			            file: file
-			        })
-			        //update the message when uploading is succes
-			        if (file.type === "audio/wav") 
-			        	$scope.uploadAudioStatus=file.name+" was uploaded";
-			        else if (file.type === "text/plain")
-			        	$scope.uploadTextStatus=file.name+" was uploaded";
+			        });
 			    };
 			},
 		}
+		//fonction create random name
+		function getRandomString() {
+		  if (window.crypto) {
+		    var a = window.crypto.getRandomValues(new Uint32Array(3)),
+		    token = '';
+		    for (var i = 0, l = a.length; i < l; i++) token += a[i].toString(36);
+		    return token;
+		  } else {
+		    return (Math.random() * new Date().getTime()).toString(36).replace( /\./g , '');
+		  }
+		};
 	}).
 	//choose file by button
 	directive('chooseFile', function(){
 		return {
 			restrict: 'E',
 			templateUrl: 'partials/choose-file',
-			controller: function($scope, Upload){
+			controller: function($scope, Upload, clientDistinct){
 				$scope.uploadAudioStatus="";
 				$scope.uploadTextStatus="";
+				var filename = "";
                 $scope.upload = function (file) {
                 	if(file !== null){
+                		if (clientDistinct.getNameClient() === 'unknown'){
+                			clientDistinct.setNameClient(getRandomString());
+                		}
+	                	if (file.type === "audio/wav"){
+				        	$scope.uploadAudioStatus=file.name+" was uploaded";
+				        	filename = clientDistinct.getNameClient()+'.wav';
+				        }
+				        else if (file.type === "text/plain"){
+				        	$scope.uploadTextStatus=file.name+" was uploaded";
+				        	filename = clientDistinct.getNameClient()+'.txt';
+	            		}
 				        Upload.upload({
-				            url: 'upload/stream',
+				            url: 'upload/stream/'+filename,
 				            method: 'POST',
 				            file: file
 				        });
-				        if (file.type === "audio/wav") 
-				        	$scope.uploadAudioStatus=file.name+" was uploaded";
-				        else if (file.type === "text/plain")
-				        	$scope.uploadTextStatus=file.name+" was uploaded";
+				        
 				    }
 			    }; 
 			}
 		}
+		//fonction create random name
+		function getRandomString() {
+		  if (window.crypto) {
+		    var a = window.crypto.getRandomValues(new Uint32Array(3)),
+		    token = '';
+		    for (var i = 0, l = a.length; i < l; i++) token += a[i].toString(36);
+		    return token;
+		  } else {
+		    return (Math.random() * new Date().getTime()).toString(36).replace( /\./g , '');
+		  }
+		};
 	}).
 	//choose tool directive links to choose-tool template
 	directive('chooseTool', function(){
@@ -120,7 +154,7 @@ angular.module('myApp.directives', []).
 		return {
 			restrict: 'E',
 			templateUrl: 'partials/transcribe-audio',
-			controller: function($scope, $http, toolSelectedFactory, mySocket){
+			controller: function($scope, $http, toolSelectedFactory, mySocket, clientDistinct){
 				//scope.isShow decide show or hide the loading icon and the transcribe text part
 				//isShow = false => transcribe text part is showed and loading icon is hided
 				$scope.isShow = false;
@@ -212,7 +246,7 @@ angular.module('myApp.directives', []).
 						//send request to server
 						$http({
 					      method: 'GET',
-					      url: toolSelectedFactory.getTranscribeLink()+'/audio'
+					      url: toolSelectedFactory.getTranscribeLink()+'/audio/'+clientDistinct.getNameClient()
 					    }).
 					    success(function(data, status, headers, config) {
 					      console.log('requete accepte');
@@ -261,7 +295,7 @@ angular.module('myApp.directives', []).
 						//sent request
 						$http({
 					      method: 'GET',
-					      url: toolSelectedFactory.getTranscribeLink()+'/micro'
+					      url: toolSelectedFactory.getTranscribeLink()+'/micro'+clientDistinct.getNameClient()
 					    }).
 					    success(function(data, status, headers, config) {
 							//take result when it's sent by res.json (sphinx4 case)
@@ -292,7 +326,7 @@ angular.module('myApp.directives', []).
 		return{
 			restrict:'E',
 			templateUrl: 'partials/audio-record',
-			controller: function($scope, $http){
+			controller: function($scope, $http, clientDistinct){
 				//get element in the template
 				var startRecording = document.getElementById('start-recording');
 				var stopRecording = document.getElementById('stop-recording');
@@ -329,19 +363,19 @@ angular.module('myApp.directives', []).
 					recordAudio.stopRecording(function() {
         				recordAudio.getDataURL(function(audioDataURL) {
             				//postFiles(audioDataURL);
-            				var fileName = getRandomString();
 			                audioRecordedFile = {
-			            		name: fileName + '.wav',
 			            		type: 'audio/wav',
 			            		contents: audioDataURL
 			    			};
 			    			//play preview
 			    			audioPreview.src = audioDataURL;
                     		audioPreview.play();
+
                     		//post file
+                    		clientDistinct.setNameClient(getRandomString());
                     		$http({
 				      			method: 'POST',
-				      			url: '/upload/file',
+				      			url: '/upload/file/'+clientDistinct.getNameClient(),
 								data: JSON.stringify(audioRecordedFile)
 				    		}).
                     		success(function(data, status, headers, config) {
@@ -406,7 +440,7 @@ angular.module('myApp.directives', []).
 		return {
 			restrict: 'E',
 			templateUrl: 'partials/convert-audio',
-			controller: function($scope, $http, toolSelectedFactory){
+			controller: function($scope, $http, toolSelectedFactory, clientDistinct){
 				$scope.showIcon = false;
 				$scope.convertMsg;
 			    $scope.convertAudio = function(){
@@ -415,10 +449,10 @@ angular.module('myApp.directives', []).
 				    	$scope.showIcon = true;
 				    	var toolName = toolSelectedFactory.getSelectedTool();
 						var inputType = location.href.substr(location.href.lastIndexOf('/'));
-						console.log('/convert/'+toolName+inputType);
+						console.log('/convert/'+toolName+inputType+'/'+clientDistinct.getNameClient());
 				    	$http({
 			      			method: 'GET',
-			      			url: '/convert/'+toolName+inputType,
+			      			url: '/convert/'+toolName+inputType+'/'+clientDistinct.getNameClient(),
 			    		}).
 	            		success(function(data, status, headers, config) {
 	            			$scope.showIcon = false;

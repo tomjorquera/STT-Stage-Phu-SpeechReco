@@ -2,44 +2,34 @@
 
 exports.uploadFile = function(req, res, next){
   var datatype = req.params.datatype;
+  var fileName = req.params.filename;
+  console.log(fileName);
   if (datatype === 'stream'){
     req.pipe(req.busboy);
-    req.busboy.on('file', function (fieldname, file, filename) {
+    req.busboy.on('file', function (fieldname, file) {
       //Path where audio file will be uploaded
-      if (filename.indexOf('.wav') !== -1){  
+      if (fileName.indexOf('.wav') !== -1){  
         var fs = require('fs-extra');       //File System - for file manipulation      
         var fstream;
         var dirUploadFolder = __dirname+'/../upload_audio/';
         if (!fs.existsSync(dirUploadFolder)){
           fs.mkdirSync(dirUploadFolder);
         }
-        var files = fs.readdirSync(dirUploadFolder);
-        if (files.length !== 0){
-          for (var i=0;i<files.length;i++){
-            fs.unlinkSync(dirUploadFolder+files[i]);
-          }
-        }
-        fstream = fs.createWriteStream(dirUploadFolder+filename);
+        fstream = fs.createWriteStream(dirUploadFolder+fileName);
         file.pipe(fstream);
         fstream.on('close', function () {    
           //console.log("Upload Finished of " + filename);       
           res.end();
         });
       }
-      if (filename.indexOf('.txt') !== -1){
+      if (fileName.indexOf('.txt') !== -1){
         var fs = require('fs-extra');       //File System - for file manipulation
         var fstream;
         var dirUploadFolder = __dirname+'/../upload_text/';
         if (!fs.existsSync(dirUploadFolder)){
           fs.mkdirSync(dirUploadFolder);
         }
-        var files = fs.readdirSync(dirUploadFolder);
-        if (files.length !== 0){
-          for (var i=0;i<files.length;i++){
-            fs.unlinkSync(dirUploadFolder+files[i]);
-          }
-        }
-        fstream = fs.createWriteStream(dirUploadFolder+filename);
+        fstream = fs.createWriteStream(dirUploadFolder+fileName);
         file.pipe(fstream);
         fstream.on('close', function () {          
           res.end();
@@ -50,17 +40,12 @@ exports.uploadFile = function(req, res, next){
   else if (datatype === 'file'){
     var fs = require('fs-extra');
     var file = req.body;
-    var fd = __dirname+'/../recorded_audio/'+file.name;
+    var fd = __dirname+'/../recorded_audio/'+fileName;
 
     if (!fs.existsSync(__dirname+'/../recorded_audio/')){
       fs.mkdirSync(__dirname+'/../recorded_audio/');
     } 
-    var files = fs.readdirSync(__dirname+'/../recorded_audio/');
-    if (files.length !== 0){
-      for (var i=0;i<files.length;i++){
-        fs.unlinkSync(__dirname+'/../recorded_audio/'+files[i]);
-      }
-    }
+
     file.contents = file.contents.split(',').pop();
 
     var buf = new Buffer(file.contents, 'base64');
@@ -68,3 +53,4 @@ exports.uploadFile = function(req, res, next){
     res.end();  
   }
 };
+

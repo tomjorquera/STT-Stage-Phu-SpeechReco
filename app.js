@@ -56,13 +56,13 @@ app.get('/partials/:name', routes.partials);
 // API
 app.get('/api/name', api.name);
 //transcribe audio by sphinx-4
-app.get('/transcribe/sphinx4/:inputtype', sphinx.transcribeSphinx);
+app.get('/transcribe/sphinx4/:inputtype/:clientname', sphinx.transcribeSphinx);
 //transcribe audio by kaldi
-app.get('/transcribe/kaldi/:inputtype', kaldi.transcribeKaldi);
+app.get('/transcribe/kaldi/:inputtype/:clientname', kaldi.transcribeKaldi);
 //convert audio
-app.get('/convert/:toolname/:inputtype', convert.convertAudio);
+app.get('/convert/:toolname/:inputtype/:clientname', convert.convertAudio);
 //upload file
-app.post('/upload/:datatype', upload.uploadFile);
+app.post('/upload/:datatype/:filename', upload.uploadFile);
 // redirect all others to the index (HTML5 history)
 app.get('*', routes.index);
 
