@@ -40,7 +40,7 @@ exports.uploadFile = function(req, res, next){
   else if (datatype === 'file'){
     var fs = require('fs-extra');
     var file = req.body;
-    var fd = __dirname+'/../recorded_audio/'+fileName;
+    var fd = __dirname+'/../recorded_audio/'+fileName+'.wav';
 
     if (!fs.existsSync(__dirname+'/../recorded_audio/')){
       fs.mkdirSync(__dirname+'/../recorded_audio/');

@@ -218,7 +218,7 @@ angular.module('myApp.directives', []).
 				});
 				mySocket.disconnect();
 				//function executes when clicking transcribe button
-				$scope.trancribeRequest =function (){
+				$scope.transcribeRequest =function (){
 					//if tool is not choosen, just give the error msg and end
 					if (toolSelectedFactory.getTranscribeLink()==='') {
 						$scope.errorMessage = "Choose a toolkit before!";
@@ -295,7 +295,7 @@ angular.module('myApp.directives', []).
 						//sent request
 						$http({
 					      method: 'GET',
-					      url: toolSelectedFactory.getTranscribeLink()+'/micro'+clientDistinct.getNameClient()
+					      url: toolSelectedFactory.getTranscribeLink()+'/micro/'+clientDistinct.getNameClient()
 					    }).
 					    success(function(data, status, headers, config) {
 							//take result when it's sent by res.json (sphinx4 case)
