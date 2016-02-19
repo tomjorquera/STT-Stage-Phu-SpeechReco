@@ -27,9 +27,25 @@ With Bower and Grunt.
         cd SpeechReco
         npm install
         bower install
+
+6. Install Sphinx-4 library
+
         mvn assembly:assembly -DdescriptorId=jar-with-dependencies
 
-6. Launch it
+7. Install Kaldi library
+
+        cd SpeechReco/backend/lib/
+        git clone https://github.com/kaldi-asr/kaldi.git kaldi-trunk --origin golden
+        ./get_data.sh /path/to/kaldi/folder
+        install kaldi 
+        cd ./kaldi-trunk/src
+        make ext
+        copy /lib/online2-wav-nnet2-latgen-faster.cc to /kaldi-trunk/src/online2bin/
+        cd ./kaldi-trunk/src/online2bin/
+        make
+        copy /lib/run.sh to /kaldi-trunk/egs/online-nnet2/
+
+8. Launch it
 
         grunt dev
 
