@@ -27,9 +27,7 @@ app.set('views', __dirname + '/frontend/views');
 app.set('view engine', 'jade');
 //app.use(express.limit('4mb'));
 app.use(morgan('dev'));
-//app.use(bodyParser());
-app.use(bodyParser.json({ limit: '5mb' }))
-//app.use(bodyParser.json());  
+app.use(bodyParser.json({ limit: '100mb' }))
 app.use(methodOverride());
 app.use(express.static(path.join(__dirname, 'frontend')));
 app.use(busboy());
