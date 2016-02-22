@@ -1,0 +1,7 @@
+br
+.btn.btn-default#transcribe-button(ng-click='requestAction()',disabled=false) Transcribe This Corpus
+img(ng-src="images/loading.gif", style="width: 200px; height: 200px", ng-show="isShow")
+br
+{{errorMsg}}
+br
+#res

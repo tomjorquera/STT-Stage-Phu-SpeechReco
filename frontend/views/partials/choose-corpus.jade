@@ -1,0 +1,9 @@
+p Choose the corpus that you want: 
+h5 Note: You can only choose ONE at time
+
+div(ng-repeat="corpus in corpuses")
+	label
+		input(type="checkbox", name="chooseCorpus",value="{{corpus}}",ng-checked="selection.indexOf(corpus) > -1",ng-click="clearList(); chooseCorpusAction(corpus)")
+		&nbsp; {{corpus}} 
+	br
+	

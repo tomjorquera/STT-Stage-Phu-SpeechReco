@@ -12,7 +12,9 @@ var express = require('express'),
   kaldi = require('./backend/kaldi'),
   upload = require('./backend/upload'),
   convert = require('./backend/convert'),
-  socket = require('./backend/websocket');
+  socket = require('./backend/websocket'),
+  kaldiCorpus = require('./backend/kaldicorpus'),
+  sphinxCorpus = require('./backend/sphinx4corpus');
 
 var app = module.exports = express();
 
@@ -54,9 +56,13 @@ app.get('/partials/:name', routes.partials);
 // API
 app.get('/api/name', api.name);
 //transcribe audio by sphinx-4
-app.get('/transcribe/sphinx4/:inputtype/:clientname', sphinx.transcribeSphinx);
+app.get('/transcribe/Sphinx-4/:inputtype/:clientname', sphinx.transcribeSphinx);
 //transcribe audio by kaldi
-app.get('/transcribe/kaldi/:inputtype/:clientname', kaldi.transcribeKaldi);
+app.get('/transcribe/Kaldi/:inputtype/:clientname', kaldi.transcribeKaldi);
+//transcribe corpus by kaldi
+app.get('/transcribecorpus/Kaldi/:corpusName', kaldiCorpus.transcribeCorpusKaldi);
+//transcribe corpus by sphinx-4
+app.get('/transcribecorpus/Sphinx-4/:corpusName', sphinxCorpus.transcribeCorpusSphinx);
 //convert audio
 app.get('/convert/:toolname/:inputtype/:clientname', convert.convertAudio);
 //upload file

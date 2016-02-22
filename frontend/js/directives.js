@@ -123,7 +123,6 @@ angular.module('myApp.directives', []).
     			//The transcribe directive will use the link variable to send request to server
     			$scope.setTool = function(tool){
 	      			toolSelectedFactory.setSelectedTool(tool);
-	      			toolSelectedFactory.setTranscribeLink();
 				};
 				//message show to user after choosing the tool
 				$scope.showMessage = function(){
@@ -158,13 +157,85 @@ angular.module('myApp.directives', []).
 				//scope.isShow decide show or hide the loading icon and the transcribe text part
 				//isShow = false => transcribe text part is showed and loading icon is hided
 				$scope.isShow = false;
-				//adr varible is the url part that makes we know what input is choose
-				var adr = location.href.substr(location.href.lastIndexOf('/'));
 				var transcribeButton = document.getElementById('transcribe-button');
 			
 				//take result if it's sent by socket (for kaldi case)
-				mySocket.on('send msg',function(data){	
-					if (adr === '/audiofile'){
+				mySocket.on('send msg audio',function(data){	
+					$scope.isShow = false;
+					$scope.transcribedText = data.transcribedText;
+					//affichage de comparaison
+					if (data.compareObject !== undefined){
+					  if (data.compareObject !== ""){
+					      var display = document.getElementById("compareObject");
+					      display.innerHTML = "Compare text here : ";
+					      data.compareObject.forEach(function(part){
+					        // green for additions, red for deletions
+					        // grey for common parts
+					        var color = part.added ? 'green' :
+					          part.removed ? 'red' : 'grey';
+					        var span = document.createElement('span');
+					        span.style.color = color;
+					        span.appendChild(document
+					          .createTextNode(part.value));
+					        display.appendChild(span);
+					      });
+					      $scope.originalText = data.originalTextExport;
+					   }
+					   else {
+					   		var display = document.getElementById("compareObject");
+						    display.innerHTML = "Text file is missing so we can not campare it";
+					   }
+					}
+					
+					transcribeButton.removeAttribute("disabled");
+				});	
+				mySocket.on('send error audio', function(data){
+					$scope.isShow = false;
+					$scope.transcribedText = data.transcribedText;
+					var display = document.getElementById("compareObject");
+					display.innerHTML = "";
+					$scope.originalText = "";
+					transcribeButton.removeAttribute("disabled");
+				});
+
+				//function executes when clicking transcribe button
+				$scope.transcribeRequest =function (){
+					//if tool is not choosen, just give the error msg and end
+					if (toolSelectedFactory.getSelectedTool==='unknown') {
+						$scope.errorMessage = "Choose a toolkit before!";
+						return 0;
+					};
+					//if the toolkit is kaldi, create a socket to server
+					if (toolSelectedFactory.getSelectedTool === "Kaldi"){
+						mySocket.connect('http://localhost:8080/',{'forceNew':true });
+					}
+					//if the toolkit is sphinx-4, disconnect the socket
+					if (toolSelectedFactory.getSelectedTool === "Sphinx-4"){
+						mySocket.disconnect();
+					}
+					//reset all upload file status, convert status, error message
+					$scope.uploadAudioStatus="";
+					$scope.uploadTextStatus="";
+					$scope.convertMsg="";
+					$scope.errorMessage ="";
+					//disable the transcribe button to make sure client can not click it twice
+					transcribeButton.setAttribute("disabled", true);
+					//show loading icon and hide the transcribe zone
+					$scope.isShow = true;						
+					//reset all part of transcribe template
+					document.getElementById("compareObject").innerHTML = "Compare text here :";
+					$scope.transcribedText = "";
+					$scope.originalText = "";
+					//send request to server
+					$http({
+				      method: 'GET',
+				      url: '/transcribe/'+toolSelectedFactory.getSelectedTool()+'/audio/'+clientDistinct.getNameClient()
+				    }).
+				    success(function(data, status, headers, config) {
+				      console.log('requete accepte');
+				      //take result when it's sent by res.json (sphinx4 case)
+				      if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
+				      	console.log(data.transcribedText); 
 						$scope.isShow = false;
 						$scope.transcribedText = data.transcribedText;
 						//affichage de comparaison
@@ -184,141 +255,90 @@ angular.module('myApp.directives', []).
 						        display.appendChild(span);
 						      });
 						      $scope.originalText = data.originalTextExport;
-						   }
-						   else {
+						   } else {
 						   		var display = document.getElementById("compareObject");
-							    display.innerHTML = "Text file is missing so we can not campare it";
+						    	display.innerHTML = "Text file is missing so we can not campare it";
 						   }
 						}
-					}
-					else if (adr === '/yourmicro'){
-						$scope.isShow = false;
-						if (data.compareObject !== undefined){   
-							$scope.errorMessage=""; 
-							console.log(data.transcribedText);
-							$scope.transcribedText = data.transcribedText;
-							//affichage de comparaison
-							var display = document.getElementById("compareObject");
-							display.innerHTML = "Compare text here : "+data.compareObject;
-							//$scope.compareObject = data.compareObject;
-							$scope.originalText = data.originalTextExport;
+						else {
+							$scope.errorMessage = "Any error happends so the compare object is undefined";
 						}
-					}
-					mySocket.disconnect();
-					transcribeButton.removeAttribute("disabled");
-				});	
-				mySocket.on('send error', function(data){
-					$scope.isShow = false;
+						transcribeButton.removeAttribute("disabled");
+				      }
+				    }).
+				    error(function(data, status, headers, config) {
+				      $scope.transcribedText = 'Error!';
+				      transcribeButton.removeAttribute("disabled");
+				    });
+				}	
+			},
+		}
+	}).
+	directive('transcribeMicro', function(){
+		return{
+			restrict: 'E',
+			templateUrl: 'partials/transcribe-micro',
+			controller: function($scope, $http, toolSelectedFactory, mySocket, clientDistinct){
+				//scope.isShow decide show or hide the loading icon and the transcribe text part
+				//isShow = false => transcribe text part is showed and loading icon is hided
+				$scope.isShow = false;
+				var transcribeButton = document.getElementById('transcribe-button');
+
+				//take result if it's sent by socket (for kaldi case)
+				mySocket.on('send msg micro',function(data){	
+					$scope.isShow = false; 
+					$scope.errorMessage=""; 
+					console.log(data.transcribedText);
 					$scope.transcribedText = data.transcribedText;
-					var display = document.getElementById("compareObject");
-					display.innerHTML = "";
-					$scope.originalText = "";
 					transcribeButton.removeAttribute("disabled");
-					mySocket.disconnect();
-				});
-				mySocket.disconnect();
+				})
+
 				//function executes when clicking transcribe button
 				$scope.transcribeRequest =function (){
 					//if tool is not choosen, just give the error msg and end
-					if (toolSelectedFactory.getTranscribeLink()==='') {
+					if (toolSelectedFactory.getSelectedTool()==='unknown') {
 						$scope.errorMessage = "Choose a toolkit before!";
 						return 0;
 					};
 					//if the toolkit is kaldi, create a socket to server
-					if (toolSelectedFactory.getTranscribeLink() === "/transcribe/kaldi"){
+					if (toolSelectedFactory.getSelectedTool() === "Kaldi"){
 						mySocket.connect('http://localhost:8080/',{'forceNew':true });
 					}
-					//reset all upload file status, convert status, error message
-					$scope.uploadAudioStatus="";
-					$scope.uploadTextStatus="";
-					$scope.convertMsg="";
-					$scope.errorMessage ="";
+					//if the toolkit is sphinx-4, disconnect the socket
+					if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
+						mySocket.disconnect();
+					}
+					$scope.convertMsg='';
+					$scope.errorMessage="";
+
 					//disable the transcribe button to make sure client can not click it twice
 					transcribeButton.setAttribute("disabled", true);
-					//when input choosen is audio file
-					if (adr === '/audiofile'){
-						//show loading icon and hide the transcribe zone
-						$scope.isShow = true;						
-						//reset all part of transcribe template
-						document.getElementById("compareObject").innerHTML = "Compare text here :";
-						$scope.transcribedText = "";
-						$scope.originalText = "";
-						//send request to server
-						$http({
-					      method: 'GET',
-					      url: toolSelectedFactory.getTranscribeLink()+'/audio/'+clientDistinct.getNameClient()
-					    }).
-					    success(function(data, status, headers, config) {
-					      console.log('requete accepte');
-					      //take result when it's sent by res.json (sphinx4 case)
-					      if (toolSelectedFactory.getTranscribeLink() === "/transcribe/sphinx4"){
-					      	console.log(data.transcribedText); 
+
+					//clear error message and show loading icon
+					$scope.errorMessage ="";
+					$scope.isShow = true;
+					//sent request
+					$http({
+				      method: 'GET',
+				      url: '/transcribe/'+toolSelectedFactory.getSelectedTool()+'/micro/'+clientDistinct.getNameClient()
+				    }).
+				    success(function(data, status, headers, config) {
+						//take result when it's sent by res.json (sphinx4 case)
+				      	if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
 							$scope.isShow = false;
+							$scope.errorMessage=""; 
+							console.log(data.transcribedText);
 							$scope.transcribedText = data.transcribedText;
-							//affichage de comparaison
-							if (data.compareObject !== undefined){
-							  if (data.compareObject !== ""){
-							      var display = document.getElementById("compareObject");
-							      display.innerHTML = "Compare text here : ";
-							      data.compareObject.forEach(function(part){
-							        // green for additions, red for deletions
-							        // grey for common parts
-							        var color = part.added ? 'green' :
-							          part.removed ? 'red' : 'grey';
-							        var span = document.createElement('span');
-							        span.style.color = color;
-							        span.appendChild(document
-							          .createTextNode(part.value));
-							        display.appendChild(span);
-							      });
-							      $scope.originalText = data.originalTextExport;
-							   } else {
-							   		var display = document.getElementById("compareObject");
-							    	display.innerHTML = "Text file is missing so we can not campare it";
-							   }
-							}
-							else {
-								$scope.errorMessage = "Any error happends so the compare object is undefined";
-							}
 							transcribeButton.removeAttribute("disabled");
-					      }
-					    }).
-					    error(function(data, status, headers, config) {
-					      $scope.transcribedText = 'Error!';
-					      transcribeButton.removeAttribute("disabled");
-					    });
-					}
-					else if (adr === '/yourmicro'){
-						//clear error message and show loading icon
-						$scope.errorMessage ="";
-						$scope.isShow = true;
-						//sent request
-						$http({
-					      method: 'GET',
-					      url: toolSelectedFactory.getTranscribeLink()+'/micro/'+clientDistinct.getNameClient()
-					    }).
-					    success(function(data, status, headers, config) {
-							//take result when it's sent by res.json (sphinx4 case)
-					      	if (toolSelectedFactory.getTranscribeLink() === "/transcribe/sphinx4"){
-								$scope.isShow = false;
-								$scope.errorMessage=""; 
-								console.log(data.transcribedText);
-								$scope.transcribedText = data.transcribedText;
-								//affichage de comparaison
-								var display = document.getElementById("compareObject");
-								display.innerHTML = "Compare text here : "+data.compareObject;
-								//$scope.compareObject = data.compareObject;
-								$scope.originalText = data.originalTextExport;
-								transcribeButton.removeAttribute("disabled");
-							}
-					    }).
-					    error(function(data, status, headers, config) {
-					      $scope.transcribedText = 'Error!';
-					      transcribeButton.removeAttribute("disabled");
-					    });
-					}
-				}	
-			},
+						}
+				    }).
+				    error(function(data, status, headers, config) {
+				      $scope.transcribedText = 'Error!';
+				      transcribeButton.removeAttribute("disabled");
+				    });
+
+				}
+			}
 		}
 	}).
 	//record audio application
@@ -469,6 +489,130 @@ angular.module('myApp.directives', []).
 				}
 			}
 		};
+	}).
+	directive('chooseCorpus',function(){
+		return {
+			restrict:'E',
+			templateUrl: 'partials/choose-corpus',
+			controller: function($scope,choosedCorpus){
+				//list corpus
+				$scope.corpuses = ['list1','list2','list3','list4'];
+				console.log($scope.corpuses);
+				//selected corpus
+				$scope.selection = [];
+				//clear selected corpus list
+				$scope.clearList = function(){
+					for (var i=0;i<$scope.selection.length;i++){
+						$scope.selection.pop();
+					}
+				};
+				//method to get selected corpus
+				$scope.chooseCorpusAction = function(corpus){
+					$scope.selection.push(corpus);
+					choosedCorpus.setCorpusName(corpus);
+					console.log($scope.selection);
+				};
+			}
+		}
+	}).
+	directive('transcribeCorpus',function(){
+		return {
+			restrict:'E',
+			templateUrl: 'partials/transcribe-corpus',
+			controller: function($scope,$http,toolSelectedFactory,choosedCorpus, mySocket){
+				$scope.showIcon = false;
+				$scope.errorMsg;
+				var transcribeButton = document.getElementById('transcribe-button');
+				var result = document.getElementById('res');
+				//take result if it's sent by socket (for kaldi case)
+				mySocket.on('send msg',function(data){	
+					console.log('recoie un message from server');
+					$scope.isShow = false;
+					$scope.transcribedText = data.transcribedText;	
+					if (data.compareObject !== ""){
+						data.compareObject.forEach(function(part){
+							// green for additions, red for deletions
+							// grey for common parts
+							var color = part.added ? 'green' :
+							part.removed ? 'red' : 'grey';
+							var span = document.createElement('span');
+							span.style.color = color;
+							span.appendChild(document.createTextNode(part.value));		
+							result.appendChild(span);
+						});
+						var br = document.createElement("br");
+						result.appendChild(br);
+					}
+					transcribeButton.removeAttribute("disabled");
+				});	
+				mySocket.on('send error', function(data){
+					$scope.isShow = false;
+					$scope.transcribedText = data.transcribedText;
+					result.innerHTML = "";
+					$scope.originalText = "";
+					transcribeButton.removeAttribute("disabled");
+				});
+				//function when click transcribe button
+				$scope.requestAction = function(){
+					//if the toolkit is sphinx-4, disconnect the socket
+					if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
+						mySocket.disconnect();
+					}
+					//if the toolkit is kal, connect the socket
+					if (toolSelectedFactory.getSelectedTool() === "Kaldi"){
+						mySocket.connect('http://localhost:8080/',{'forceNew':true });
+					}
+					//verify if error cases
+					if (choosedCorpus.getCorpusName() === "unknown"){
+						$scope.errorMsg="Have you choosen a corpus yet?";
+					}
+					else if (toolSelectedFactory.getSelectedTool() === ""){
+						$scope.errorMsg="Have you choosen a tool yet?";
+					}
+					else {
+						//disable the transcribe button to make sure client can not click it twice
+						transcribeButton.setAttribute("disabled", true);				
+						$scope.errorMsg="";
+						$scope.showIcon = true;
+						result.innerHTML="";
+						$http({
+			      			method: 'GET',
+			      			url: '/transcribecorpus/'+toolSelectedFactory.getSelectedTool()+'/'+choosedCorpus.getCorpusName(),
+			    		}).
+	            		success(function(data, status, headers, config) {
+	            			$scope.showIcon = false;
+	            			//request sent
+	            			console.log('transcribe corpus request sent');
+	            			//affichage de result
+	            			if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
+	            				console.log('transcribe corpus request sent');
+		            			data.forEach(function(audio){
+		            				if (audio !== ""){
+										audio.forEach(function(part){
+											// green for additions, red for deletions
+											// grey for common parts
+											var color = part.added ? 'green' :
+											part.removed ? 'red' : 'grey';
+											var span = document.createElement('span');
+											span.style.color = color;
+											span.appendChild(document.createTextNode(part.value));		
+											result.appendChild(span);
+										});
+										var br = document.createElement("br");
+										result.appendChild(br);
+									}
+									transcribeButton.removeAttribute("disabled");
+	            				});
+		            		}
+	            		}).
+	            		error(function(data, status, headers, config) {
+	            			$scope.showIcon = false;
+	            			console.log('transcribe corpus request error');
+			    		});
+			    	}
+				};
+			}
+		}
 	})
 
 

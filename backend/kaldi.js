@@ -1,8 +1,9 @@
 "use strict";
 
+
 exports.transcribeKaldi = function(req, res) {
 	var fs = require('fs-extra');
-  	var socket = require('./websocket.js').getSocket();
+	var socket = require('./websocket.js').getSocket(); 	
   	var selectedInput = req.params.inputtype;
   	var clientName = req.params.clientname;
 
@@ -19,7 +20,7 @@ exports.transcribeKaldi = function(req, res) {
     res.send(202);
 
 	if (audioFile === 'error'){ //verify if audio data is ready 
-		socket.emit('send msg',{
+		socket.emit('send msg audio',{
 			transcribedText: "Audio input is missing. Upload or record your file first...",
 			compareObject: "",
 			originalTextExport: "",
@@ -41,7 +42,7 @@ exports.transcribeKaldi = function(req, res) {
 						fs.unlinkSync(audioFile);
 						console.log("kaldi renvoie resultat");
 						console.log(result);
-						socket.emit('send msg', {
+						socket.emit('send msg audio', {
 							transcribedText: result,
 							compareObject: campareText(result, originalText),
 							originalTextExport: originalText,
@@ -49,10 +50,10 @@ exports.transcribeKaldi = function(req, res) {
 						console.log("kaldi fini");
 					}
 					else //text file is NOT uploaded
-						socket.emit('send msg', {
-						transcribedText: result,
-						compareObject: "",
-						originalTextExport: "",
+						socket.emit('send msg audio', {
+							transcribedText: result,
+							compareObject: "",
+							originalTextExport: "",
 						});
 				};
 				break;
@@ -60,12 +61,10 @@ exports.transcribeKaldi = function(req, res) {
 				var kaldiRoot = __dirname+'/lib/kaldi-trunk';
 				transcribeByKaldi(kaldiRoot,audioFile, callbackMicro);
 				function callbackMicro(result){
-					fs.unlinkSync(audioFile);
+					//fs.unlinkSync(audioFile);
 					console.log("kaldi renvoie resultat");
-					socket.emit('send msg',{
-						transcribedText: result,
-						compareObject: "No needed for an input by micro",
-						originalTextExport: "No needed for an input by micro",
+					socket.emit('send msg micro',{
+						transcribedText: result
 					});
 					console.log("kaldi fini");
 				};
@@ -88,8 +87,9 @@ function transcribeByKaldi(kaldiPath, filePath, callback){
 		if (stdout !== ""){
 			callback(stdout);
 		} else {
+			var socket = require('./websocket.js').getSocket();
 			socket.emit('send error', {
-			  transcribedText:" Error of transcript. Maybe the audio is not suitable. Please convert it.."
+			  transcribedText:" Error of transcript. Unknown problem happends"
 			});
 		}
 		if (error !== null) {

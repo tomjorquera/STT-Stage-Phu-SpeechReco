@@ -1,0 +1,9 @@
+br
+.btn.btn-default#transcribe-button(ng-click='transcribeRequest()',disabled=false) Transcribe Your Micro
+br
+{{errorMessage}}
+br
+center
+	img(ng-src="images/loading.gif", style="width: 200px; height: 200px", ng-show="isShow")
+div(ng-hide="isShow")
+	blockquote#transcribedText Transcribed text here :{{transcribedText}}

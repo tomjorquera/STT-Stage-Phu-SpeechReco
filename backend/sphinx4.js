@@ -51,9 +51,7 @@ exports.transcribeSphinx = function(req, res) {
 	        break;
 	      case 'micro':
 	        res.json({
-	          transcribedText: result,
-	          compareObject: "No needed for an input by micro",
-	          originalTextExport: "No needed for an input by micro",
+	          transcribedText: result
 	        });
 	      default:
 	        break;
