@@ -1,5 +1,3 @@
 p And then, choose a toolkit:
-#align
-	select.btn-primary(ng-model='toolSelected', ng-change='setValue(toolSelected.value); setTool(toolSelected.name)', data-ng-options='chooseTool as chooseTool.name for chooseTool in chooseTools') 
-	.btn.btn-info.btn-xs(ng-click='showMessage()') OK
-	{{message}}
+select.btn-primary(ng-model='toolSelected', ng-change='setValue(toolSelected.value); setTool(toolSelected.name);showMessage()', data-ng-options='chooseTool as chooseTool.name for chooseTool in chooseTools') 
+&nbsp; &nbsp; {{message}}

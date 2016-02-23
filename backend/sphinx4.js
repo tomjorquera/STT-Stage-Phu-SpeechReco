@@ -2,6 +2,7 @@
 
 exports.transcribeSphinx = function(req, res) {
 	var fs = require('fs-extra');
+	var lemmer =  require('lemmer');
 	var selectedInput = req.params.inputtype;
 	var clientName = req.params.clientname;
 
@@ -33,21 +34,47 @@ exports.transcribeSphinx = function(req, res) {
 	    switch (selectedInput){//2 cases of input (audio or micro)
 	      case 'audio':
 	        if (textFile !== 'error'){ //text file is uploaded
-	          //get the original text
-	          var originalText = fs.readFileSync(textFile,"UTF-8").toLowerCase(); 
-	          fs.unlinkSync(textFile);
-	          result = transcribeBySphinx(audioFile);
-	          res.json({
-	            transcribedText: result,
-	            compareObject: campareText(result, originalText),
-	            originalTextExport: originalText,
-	          });
-	        } else //text file is NOT uploaded
-	          res.json({
-	            transcribedText: result,
-	            compareObject: "",
-	            originalTextExport: "",
-	          });
+				//get the original text
+				var originalText = fs.readFileSync(textFile,"UTF-8").toLowerCase(); 
+				fs.unlinkSync(textFile);
+				result = transcribeBySphinx(audioFile);
+				var resultTable = result.split(' ');
+				var textTable = originalText.split(' ');
+				lemmer.lemmatize(resultTable, function(err, transformResult){
+					var resultSimplifize='';
+					transformResult.forEach(function(word){
+						resultSimplifize+=word+' ';
+					});
+					lemmer.lemmatize(textTable, function(err, transformText){
+						var textSimplifize='';
+						transformText.forEach(function(word){
+							textSimplifize+=word+' ';
+						});
+						var textSimplifizeF = textSimplifize.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+						console.log(resultSimplifize);
+						console.log(textSimplifizeF);
+						res.json({
+							transcribedText: resultSimplifize,
+							compareObject: campareText(resultSimplifize, textSimplifizeF),
+							originalTextExport: textSimplifizeF,
+						});
+					});
+				});	
+	        } 
+	        else {//text file is NOT uploaded
+	        	var resultTable = result.split(' ');
+				lemmer.lemmatize(resultTable, function(err, tranformResult){
+					var resultSimplifize='';
+					transformResult.forEach(function(word){
+						resultSimplifize+=word+' ';
+					});
+					res.json({
+						transcribedText: resultSimplifize,
+						compareObject: "",
+						originalTextExport: "",
+					});
+				});
+			}
 	        break;
 	      case 'micro':
 	        res.json({

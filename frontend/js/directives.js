@@ -465,7 +465,7 @@ angular.module('myApp.directives', []).
 				$scope.convertMsg;
 			    $scope.convertAudio = function(){
 			    	$scope.convertMsg ="";
-			    	if (toolSelectedFactory.getSelectedTool() !== ''){
+			    	if (toolSelectedFactory.getSelectedTool() !== 'unknown'){
 				    	$scope.showIcon = true;
 				    	var toolName = toolSelectedFactory.getSelectedTool();
 						var inputType = location.href.substr(location.href.lastIndexOf('/'));

@@ -17,7 +17,7 @@ exports.convertAudio = function(req, res) {
         default:
             break;
     }
-    if (clientName !== "unknown"){
+    if (fs.existsSync(audioFolder+'/'+audioName)){
         switch (toolName){
             case "Sphinx-4":
                 var exec = require('child_process').exec;

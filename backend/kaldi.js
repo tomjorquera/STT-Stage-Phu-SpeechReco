@@ -3,10 +3,11 @@
 
 exports.transcribeKaldi = function(req, res) {
 	var fs = require('fs-extra');
-	var socket = require('./websocket.js').getSocket(); 	
+	var socket = require('./websocket.js').getSocket(); 
+	var lemmer =  require('lemmer');	
   	var selectedInput = req.params.inputtype;
   	var clientName = req.params.clientname;
-
+  	
   	//get data necessary which are original text and audio file (record audio or internet audio)
 	  
 	if (selectedInput === 'audio'){
@@ -42,19 +43,44 @@ exports.transcribeKaldi = function(req, res) {
 						fs.unlinkSync(audioFile);
 						console.log("kaldi renvoie resultat");
 						console.log(result);
-						socket.emit('send msg audio', {
-							transcribedText: result,
-							compareObject: campareText(result, originalText),
-							originalTextExport: originalText,
-						});
+						var resultTable = result.split(' ');
+						var textTable = originalText.split(' ');
+						lemmer.lemmatize(resultTable, function(err, transformResult){
+							var resultSimplifize='';
+							transformResult.forEach(function(word){
+								resultSimplifize+=word+' ';
+							});
+							lemmer.lemmatize(textTable, function(err, transformText){
+								var textSimplifize='';
+								transformText.forEach(function(word){
+									textSimplifize+=word+' ';
+								});
+								var textSimplifizeF = textSimplifize.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+								console.log(resultSimplifize);
+								console.log(textSimplifizeF);
+								socket.emit('send msg audio', {
+									transcribedText: resultSimplifize,
+									compareObject: campareText(resultSimplifize, textSimplifizeF),
+									originalTextExport: textSimplifizeF,
+								});
+							});
+						});	
 						console.log("kaldi fini");
 					}
-					else //text file is NOT uploaded
-						socket.emit('send msg audio', {
-							transcribedText: result,
-							compareObject: "",
-							originalTextExport: "",
-						});
+					else {//text file is NOT uploaded
+						var resultTable = result.split(' ');
+						lemmer.lemmatize(resultTable, function(err, tranformResult){
+							var resultSimplifize='';
+							transformResult.forEach(function(word){
+								resultSimplifize+=word+' ';
+							});
+							socket.emit('send msg audio', {
+								transcribedText: resultSimplifize,
+								compareObject: "",
+								originalTextExport: "",
+							});
+						});		
+					}		
 				};
 				break;
 			case 'micro':
