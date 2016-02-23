@@ -526,11 +526,14 @@ angular.module('myApp.directives', []).
 			controller: function($scope,$http,toolSelectedFactory,choosedCorpus, mySocket){
 				$scope.showIcon = false;
 				$scope.errorMsg;
-				$scope.werAverage;
+				$scope.average;
 				var transcribeButton = document.getElementById('transcribe-button');
 				var result = document.getElementById('res');
-				var wersSum = 0;
+				var werSum = 0;
 				var numAudio = 0;
+				var precisionSum = 0;
+				var recallSum = 0;
+				var fScoreSum = 0;
 				//take result if it's sent by socket (for kaldi case)
 				mySocket.on('send msg',function(data){	
 					console.log('recoie un message from server');
@@ -549,9 +552,12 @@ angular.module('myApp.directives', []).
 						});
 						var br = document.createElement("br");
 						result.appendChild(br);
-						var wer = document.createTextNode(' -> Wer: '+data.WER);
-						wersSum += data.WER;
-						result.appendChild(wer);
+						var info = document.createTextNode(' -> WER: '+data.WER+'/Precision: '+data.precision+'/Recall: '+data.recall+'/F-Score: '+data.fScore);
+						werSum += parseFloat(data.WER);
+						precisionSum += parseFloat(data.precision);
+						recallSum += parseFloat(data.recall);
+						fScoreSum += parseFloat(data.fScore);
+						result.appendChild(info);
 						result.appendChild(br);
 					}
 				});	
@@ -571,19 +577,31 @@ angular.module('myApp.directives', []).
 							result.appendChild(span);
 						});
 						var br = document.createElement("br");
-						var wer = document.createTextNode(' -> Wer: '+data.WER);
-						wersSum += data.WER;
+						var wer = document.createTextNode(' -> WER: '+data.WER+'/Precision: '+data.precision+'/Recall: '+data.recall+'/F-Score: '+data.fScore);
+						werSum += parseFloat(data.WER);
+						precisionSum += parseFloat(data.precision);
+						recallSum += parseFloat(data.recall);
+						fScoreSum += parseFloat(data.fScore);
 						result.appendChild(wer);
 						result.appendChild(br);
 					}
-					var averageWer = wersSum/numAudio;
-					$scope.werAverage = 'Wer Average: '+averageWer.toFixed(2);
+					var averageWer = werSum/parseFloat(numAudio);
+					console.log(averageWer);
+					var averagePrecision = precisionSum/parseFloat(numAudio);
+					console.log(precisionSum);
+					console.log(averagePrecision);
+					var averageRecall = recallSum/parseFloat(numAudio);
+					var averageFScore = fScoreSum/parseFloat(numAudio);
+					$scope.average = 'Average: WER: '+averageWer.toFixed(3)
+									+'/Precision: '+averagePrecision.toFixed(3)
+									+'/Recall: '+averageRecall.toFixed(3)
+									+'/F-Score: '+averageFScore.toFixed(3);
 					$scope.showIcon = false;
 					transcribeButton.removeAttribute("disabled");
 				});
 				//function when click transcribe button
 				$scope.requestAction = function(){
-					$scope.werAverage ='';
+					$scope.average ='';
 					//if the toolkit is sphinx-4, disconnect the socket
 					if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
 						mySocket.disconnect();
@@ -628,12 +646,12 @@ angular.module('myApp.directives', []).
 											result.appendChild(span);
 										});
 										var br = document.createElement("br");
-										var wer = document.createTextNode(' -> Wer: '+audio.WER);
-										result.appendChild(wer);
+										var info = document.createTextNode(' -> WER: '+audio.WER+'/Precision: '+audio.precision+'/Recall: '+audio.recall+'/F-Score: '+audio.fScore);
+										result.appendChild(info);
 										result.appendChild(br);
 									}
 									if (audio.Average !== 'unknown'){
-										$scope.werAverage = 'Wer Average: '+parseFloat(audio.Average).toFixed(2);
+										$scope.average = 'Average: '+audio.Average;
 									}
 	            				});
 	            				$scope.showIcon = false;

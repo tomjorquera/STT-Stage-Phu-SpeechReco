@@ -30,6 +30,9 @@ exports.transcribeCorpusSphinx = function(req, res) {
 		var appSpeech = new S2T();
 		var result = appSpeech.transcribeSync(audioFilesFolder+audioName);
 		var wersSum = 0;
+		var precisionSum = 0;
+		var recallSum = 0;
+		var fScoreSum = 0;
 		var numAudio = 0;
 		process.nextTick(function(){
 			var originalText = fs.readFileSync(textFilesFolder+txtName,"UTF-8").toLowerCase();
@@ -53,20 +56,37 @@ exports.transcribeCorpusSphinx = function(req, res) {
 					console.log('Sphinx-4 is done with '+audioName+'>>>>>');
 					numAudio += 1;
 					wersSum += wer;
+					var campare = campareText(resultSimplifize, textSimplifizeF);
+					var precisionRecall = calculs.precisionRecall(campare);
+					precisionSum += precisionRecall.Precision;
+					recallSum += precisionRecall.Recall;
+					fScoreSum += precisionRecall.FScore;
 					if (i !== (lines.length-1)){
 						resultF.push({
-							compareObject: campareText(resultSimplifize, textSimplifizeF),
+							compareObject: campare,
 							WER: wer,
+							precision: precisionRecall.Precision,
+							recall: precisionRecall.Recall,
+							fScore: precisionRecall.FScore,	
 							Average: 'unknown'
 						});
 						analize(i+1);
 					}
 					else {
 						var averageWer = wersSum/numAudio;
+						var averagePrecision = precisionSum/numAudio;
+						var averageRecall = recallSum/numAudio;
+						var averageFScore = fScoreSum/numAudio;
 						resultF.push({
-							compareObject: campareText(resultSimplifize, textSimplifizeF),
+							compareObject: campare,
 							WER: wer,
-							Average: averageWer
+							precision: precisionRecall.Precision,
+							recall: precisionRecall.Recall,
+							fScore: precisionRecall.FScore,	
+							Average: 'WER: '+averageWer.toFixed(3)
+											+'/Precision: '+averagePrecision.toFixed(3)
+											+'/Recall: '+averageRecall.toFixed(3)
+											+'/F-Score: '+averageFScore.toFixed(3)
 						});
 						res.json(resultF);
 					}

@@ -43,19 +43,25 @@ exports.transcribeCorpusKaldi = function(req, res) {
 					textSimplifize+=word+' ';
 				});
 				var textSimplifizeF = textSimplifize.replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
-				
-				
+				var campare = campareText(resultSimplifize, textSimplifizeF);
+				var precisionRecall = calculs.precisionRecall(campare);
 				if (i !== (lines.length-1)){
 					socket.emit('send msg', {
-						compareObject: campareText(resultSimplifize, textSimplifizeF),
-						WER: calculs.werCalcul(campareText(resultSimplifize, textSimplifizeF),textSimplifizeF)	
+						compareObject: campare,
+						WER: calculs.werCalcul(campare,textSimplifizeF),	
+						precision: precisionRecall.Precision,
+						recall: precisionRecall.Recall,
+						fScore: precisionRecall.FScore	
 					});
 					console.log('Kaldi is done with '+audioName+'>>>>>');
 					analize(i+1);		
 				} else {
 					socket.emit('send last msg', {
-						compareObject: campareText(resultSimplifize, textSimplifizeF),
-						WER: calculs.werCalcul(campareText(resultSimplifize, textSimplifizeF),textSimplifizeF)	
+						compareObject: campare,
+						WER: calculs.werCalcul(campare,textSimplifizeF),
+						precision: precisionRecall.Precision,
+						recall: precisionRecall.Recall,
+						fScore: precisionRecall.FScore	
 					});
 					console.log('Kaldi is done with '+audioName+'>>>>>');
 				}

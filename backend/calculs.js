@@ -3,7 +3,7 @@ exports.werCalcul = function(diffObject,orgText){
 	var removed = 0;
 	var subs = 0;
 	var N = 0;
-	//campare texts with diff
+	//get removed and added words with diff
 	diffObject.forEach(function(part){
 		if (part.removed){
 			part.value.split(' ').forEach(function(a){
@@ -49,5 +49,50 @@ exports.werCalcul = function(diffObject,orgText){
 	console.log('subs = '+subs);
 	console.log('N = '+N);
 	var WER = (removed+added+subs)/N;
-	return WER
+	return WER.toFixed(3);
+}
+
+exports.precisionRecall = function(diffObject){
+	var added = 0;
+	var removed = 0;
+	var right = 0;
+	var N = 0;
+	//get removed and added words with diff
+	diffObject.forEach(function(part){
+		if (part.removed){
+			part.value.split(' ').forEach(function(a){
+				//console.log('removed:'+a+'/');
+				if(a!==''){
+					removed += 1;
+				}			
+			});
+		}
+		else if (part.added){
+			part.value.split(' ').forEach(function(a){
+				//console.log('added:'+a+'/');
+				if(a!==''){
+					added += 1;
+				}
+			});
+		}
+		else {
+			part.value.split(' ').forEach(function(a){
+				//console.log('added:'+a+'/');
+				if(a!==''){
+					right += 1;
+				}
+			})
+		}
+	});
+	//precision = tp/(tp+fp)
+	var precision = right/(right+added);
+	//recall = tp/(tp+fn)
+	var recall = right/(right+removed);
+	//F1-score
+	var fScore = (2*precision*recall)/(precision+recall);
+	return {
+		Precision: precision.toFixed(3),
+		Recall: recall.toFixed(3),
+		FScore: fScore.toFixed(3)
+	}
 }
