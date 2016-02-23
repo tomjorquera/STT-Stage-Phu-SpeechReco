@@ -42,7 +42,7 @@ exports.transcribeKaldi = function(req, res) {
 						fs.unlinkSync(textFile);
 						fs.unlinkSync(audioFile);
 						console.log("kaldi renvoie resultat");
-						console.log(result);
+						console.log('resultat: '+result);
 						var resultTable = result.split(' ');
 						var textTable = originalText.split(' ');
 						lemmer.lemmatize(resultTable, function(err, transformResult){
@@ -55,9 +55,9 @@ exports.transcribeKaldi = function(req, res) {
 								transformText.forEach(function(word){
 									textSimplifize+=word+' ';
 								});
-								var textSimplifizeF = textSimplifize.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
-								console.log(resultSimplifize);
-								console.log(textSimplifizeF);
+								var textSimplifizeF = textSimplifize.replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+								//var calcul_WER = require('./calculs.js');
+								//console.log(calcul_WER.werCalcul(campareText(resultSimplifize, textSimplifizeF),textSimplifizeF));
 								socket.emit('send msg audio', {
 									transcribedText: resultSimplifize,
 									compareObject: campareText(resultSimplifize, textSimplifizeF),

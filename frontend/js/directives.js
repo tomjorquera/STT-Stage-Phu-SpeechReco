@@ -80,17 +80,21 @@ angular.module('myApp.directives', []).
 	                	if (file.type === "audio/wav"){
 				        	$scope.uploadAudioStatus=file.name+" was uploaded";
 				        	filename = clientDistinct.getNameClient()+'.wav';
+				        	Upload.upload({
+					            url: 'upload/stream/'+filename,
+					            method: 'POST',
+					            file: file
+				        	});
 				        }
 				        else if (file.type === "text/plain"){
 				        	$scope.uploadTextStatus=file.name+" was uploaded";
 				        	filename = clientDistinct.getNameClient()+'.txt';
+				        	Upload.upload({
+					            url: 'upload/stream/'+filename,
+					            method: 'POST',
+					            file: file
+				        	});
 	            		}
-				        Upload.upload({
-				            url: 'upload/stream/'+filename,
-				            method: 'POST',
-				            file: file
-				        });
-				        
 				    }
 			    }; 
 			}
@@ -522,12 +526,15 @@ angular.module('myApp.directives', []).
 			controller: function($scope,$http,toolSelectedFactory,choosedCorpus, mySocket){
 				$scope.showIcon = false;
 				$scope.errorMsg;
+				$scope.werAverage;
 				var transcribeButton = document.getElementById('transcribe-button');
 				var result = document.getElementById('res');
+				var wersSum = 0;
+				var numAudio = 0;
 				//take result if it's sent by socket (for kaldi case)
 				mySocket.on('send msg',function(data){	
 					console.log('recoie un message from server');
-					$scope.isShow = false;
+					numAudio += 1;
 					$scope.transcribedText = data.transcribedText;	
 					if (data.compareObject !== ""){
 						data.compareObject.forEach(function(part){
@@ -542,18 +549,41 @@ angular.module('myApp.directives', []).
 						});
 						var br = document.createElement("br");
 						result.appendChild(br);
+						var wer = document.createTextNode(' -> Wer: '+data.WER);
+						wersSum += data.WER;
+						result.appendChild(wer);
+						result.appendChild(br);
 					}
-					transcribeButton.removeAttribute("disabled");
 				});	
-				mySocket.on('send error', function(data){
-					$scope.isShow = false;
-					$scope.transcribedText = data.transcribedText;
-					result.innerHTML = "";
-					$scope.originalText = "";
+				mySocket.on('send last msg', function(data){
+					console.log('recoie dernier message from server');
+					numAudio += 1;
+					$scope.transcribedText = data.transcribedText;	
+					if (data.compareObject !== ""){
+						data.compareObject.forEach(function(part){
+							// green for additions, red for deletions
+							// grey for common parts
+							var color = part.added ? 'green' :
+							part.removed ? 'red' : 'grey';
+							var span = document.createElement('span');
+							span.style.color = color;
+							span.appendChild(document.createTextNode(part.value));		
+							result.appendChild(span);
+						});
+						var br = document.createElement("br");
+						var wer = document.createTextNode(' -> Wer: '+data.WER);
+						wersSum += data.WER;
+						result.appendChild(wer);
+						result.appendChild(br);
+					}
+					var averageWer = wersSum/numAudio;
+					$scope.werAverage = 'Wer Average: '+averageWer.toFixed(2);
+					$scope.showIcon = false;
 					transcribeButton.removeAttribute("disabled");
 				});
 				//function when click transcribe button
 				$scope.requestAction = function(){
+					$scope.werAverage ='';
 					//if the toolkit is sphinx-4, disconnect the socket
 					if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
 						mySocket.disconnect();
@@ -580,15 +610,14 @@ angular.module('myApp.directives', []).
 			      			url: '/transcribecorpus/'+toolSelectedFactory.getSelectedTool()+'/'+choosedCorpus.getCorpusName(),
 			    		}).
 	            		success(function(data, status, headers, config) {
-	            			$scope.showIcon = false;
 	            			//request sent
 	            			console.log('transcribe corpus request sent');
 	            			//affichage de result
 	            			if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
 	            				console.log('transcribe corpus request sent');
 		            			data.forEach(function(audio){
-		            				if (audio !== ""){
-										audio.forEach(function(part){
+		            				if (audio !== []){
+										audio.compareObject.forEach(function(part){
 											// green for additions, red for deletions
 											// grey for common parts
 											var color = part.added ? 'green' :
@@ -599,10 +628,16 @@ angular.module('myApp.directives', []).
 											result.appendChild(span);
 										});
 										var br = document.createElement("br");
+										var wer = document.createTextNode(' -> Wer: '+audio.WER);
+										result.appendChild(wer);
 										result.appendChild(br);
 									}
-									transcribeButton.removeAttribute("disabled");
+									if (audio.Average !== 'unknown'){
+										$scope.werAverage = 'Wer Average: '+parseFloat(audio.Average).toFixed(2);
+									}
 	            				});
+	            				$scope.showIcon = false;
+	            				transcribeButton.removeAttribute("disabled");
 		            		}
 	            		}).
 	            		error(function(data, status, headers, config) {

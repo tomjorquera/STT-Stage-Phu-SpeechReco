@@ -2,7 +2,8 @@
 exports.transcribeCorpusSphinx = function(req, res) {
 	console.log('Sphinx recoie requete: '+req.params.corpusName);
 	var fs = require('fs-extra');
-	var async = require('async');
+	var calculs = require('./calculs.js');
+	var lemmer =  require('lemmer');
 	var corpus = req.params.corpusName;
 	var corpusFolder = __dirname+'/../corpus/'+corpus+'/';
 	var audioFilesFolder = __dirname+'/../corpus/'+corpus+'/wav-for-sphinx/';
@@ -28,18 +29,49 @@ exports.transcribeCorpusSphinx = function(req, res) {
 		var S2T = java.import('AppTestSpeechReco');
 		var appSpeech = new S2T();
 		var result = appSpeech.transcribeSync(audioFilesFolder+audioName);
+		var wersSum = 0;
+		var numAudio = 0;
 		process.nextTick(function(){
 			var originalText = fs.readFileSync(textFilesFolder+txtName,"UTF-8").toLowerCase();
-			console.log(originalText);
-			console.log('trans: '+result);
-			//send socket to client time by time
+			var resultTable = result.split(' ');
+			var textTable = originalText.split(' ');
 	    	console.log('Sphinx-4 sends transcript of file '+audioName+'>>>>>');
-	    	//var socket = require('./websocket.js').sendMsg({compareObject: campareText(result, originalText)});
-	    	resultF.push(campareText(result,originalText));
-	    	console.log(resultF);
-			console.log('Sphinx-4 is done with '+audioName+'>>>>>');
-			if ((i+1) !== lines.length) analize(i+1);
-			else res.json(resultF);
+	    	//simplifize
+	    	lemmer.lemmatize(resultTable, function(err, transformResult){
+				var resultSimplifize='';
+				transformResult.forEach(function(word){
+					resultSimplifize+=word+' ';
+				});
+				lemmer.lemmatize(textTable, function(err, transformText){
+					var textSimplifize='';
+					transformText.forEach(function(word){
+						textSimplifize+=word+' ';
+					});
+					var textSimplifizeF = textSimplifize.replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+					var wer = calculs.werCalcul(campareText(resultSimplifize, textSimplifizeF),textSimplifizeF);
+					//console.log(resultF);
+					console.log('Sphinx-4 is done with '+audioName+'>>>>>');
+					numAudio += 1;
+					wersSum += wer;
+					if (i !== (lines.length-1)){
+						resultF.push({
+							compareObject: campareText(resultSimplifize, textSimplifizeF),
+							WER: wer,
+							Average: 'unknown'
+						});
+						analize(i+1);
+					}
+					else {
+						var averageWer = wersSum/numAudio;
+						resultF.push({
+							compareObject: campareText(resultSimplifize, textSimplifizeF),
+							WER: wer,
+							Average: averageWer
+						});
+						res.json(resultF);
+					}
+				});
+			});
 		});
 		//callback(audioName,txtName,i);
 		//add sphinx-4 librairie

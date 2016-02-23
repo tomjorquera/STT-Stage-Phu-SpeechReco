@@ -3,6 +3,8 @@ exports.transcribeCorpusKaldi = function(req, res) {
 	console.log('Kaldi recoie requete: '+req.params.corpusName);
 	var fs = require('fs-extra');
 	var socket = require('./websocket.js').getSocket();
+	var calculs = require('./calculs.js');
+	var lemmer =  require('lemmer');
 	var corpus = req.params.corpusName;
 	var corpusFolder = __dirname+'/../corpus/'+corpus+'/';
 	var audioFilesFolder = __dirname+'/../corpus/'+corpus+'/wav-for-kaldi/';
@@ -24,16 +26,41 @@ exports.transcribeCorpusKaldi = function(req, res) {
 	};	
 
 	function callback(i, result,audioName,txtName){
-			var originalText = fs.readFileSync(textFilesFolder+txtName,"UTF-8").toLowerCase();
-    		console.log(originalText);
-    		//send socket to client time by time
-	    	console.log('Kaldi send transcript of file '+audioName+'>>>>>');
-	    	var socket = require('./websocket.js').getSocket();
-	    	socket.emit('send msg', {
-				compareObject: campareText(result, originalText)
+		var originalText = fs.readFileSync(textFilesFolder+txtName,"UTF-8").toLowerCase();
+		var resultTable = result.split(' ');
+		var textTable = originalText.split(' ');
+		//send socket to client time by time
+    	console.log('Kaldi send transcript of file '+audioName+'>>>>>');
+    	//simplifize
+    	lemmer.lemmatize(resultTable, function(err, transformResult){
+			var resultSimplifize='';
+			transformResult.forEach(function(word){
+				resultSimplifize+=word+' ';
 			});
-			console.log('Kaldi is done with '+audioName+'>>>>>');
-			if ((i+1) !== lines.length) analize(i+1);
+			lemmer.lemmatize(textTable, function(err, transformText){
+				var textSimplifize='';
+				transformText.forEach(function(word){
+					textSimplifize+=word+' ';
+				});
+				var textSimplifizeF = textSimplifize.replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+				
+				
+				if (i !== (lines.length-1)){
+					socket.emit('send msg', {
+						compareObject: campareText(resultSimplifize, textSimplifizeF),
+						WER: calculs.werCalcul(campareText(resultSimplifize, textSimplifizeF),textSimplifizeF)	
+					});
+					console.log('Kaldi is done with '+audioName+'>>>>>');
+					analize(i+1);		
+				} else {
+					socket.emit('send last msg', {
+						compareObject: campareText(resultSimplifize, textSimplifizeF),
+						WER: calculs.werCalcul(campareText(resultSimplifize, textSimplifizeF),textSimplifizeF)	
+					});
+					console.log('Kaldi is done with '+audioName+'>>>>>');
+				}
+			});
+		});	
     }
 };
 
@@ -46,7 +73,7 @@ function transcribeByKaldi(kaldiPath,filePath,i,txtName,audioName,callback){
 	var cmd2 = './run.sh '+kaldiPath+' '+filePath;
 	console.log(cmd1+' ; '+cmd2);
 	exec(cmd1+' ; '+cmd2, function(error, stdout, stderr) {
-		console.log('fini '+audioName+' '+stdout);
+		//console.log('fini '+audioName+' '+stdout);
 		if (stdout !== ""){
 			callback(i,stdout,audioName,txtName);
 		} 
