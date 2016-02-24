@@ -12,6 +12,11 @@ exports.transcribeCorpusSphinx = function(req, res) {
 	var audioName;
 	var lines = fs.readFileSync(corpusFolder+corpus+'.txt').toString().split('\n');
 	var resultF = [];
+	var wersSum = 0;
+	var precisionSum = 0;
+	var recallSum = 0;
+	var fScoreSum = 0;
+	var numAudio = 0;
 
 	function analize(i){
 	    var files = lines[i].toString().split(' ');
@@ -29,11 +34,7 @@ exports.transcribeCorpusSphinx = function(req, res) {
 		var S2T = java.import('AppTestSpeechReco');
 		var appSpeech = new S2T();
 		var result = appSpeech.transcribeSync(audioFilesFolder+audioName);
-		var wersSum = 0;
-		var precisionSum = 0;
-		var recallSum = 0;
-		var fScoreSum = 0;
-		var numAudio = 0;
+		
 		process.nextTick(function(){
 			var originalText = fs.readFileSync(textFilesFolder+txtName,"UTF-8").toLowerCase();
 			var resultTable = result.split(' ');
@@ -54,13 +55,14 @@ exports.transcribeCorpusSphinx = function(req, res) {
 					var wer = calculs.werCalcul(campareText(resultSimplifize, textSimplifizeF),textSimplifizeF);
 					//console.log(resultF);
 					console.log('Sphinx-4 is done with '+audioName+'>>>>>');
-					numAudio += 1;
-					wersSum += wer;
 					var campare = campareText(resultSimplifize, textSimplifizeF);
 					var precisionRecall = calculs.precisionRecall(campare);
-					precisionSum += precisionRecall.Precision;
-					recallSum += precisionRecall.Recall;
-					fScoreSum += precisionRecall.FScore;
+					numAudio += 1;
+					wersSum += parseFloat(wer);
+					precisionSum += parseFloat(precisionRecall.Precision);
+					recallSum += parseFloat(precisionRecall.Recall);
+					fScoreSum += parseFloat(precisionRecall.FScore);
+					console.log(wersSum+' '+precisionSum+' '+recallSum+' '+fScoreSum);
 					if (i !== (lines.length-1)){
 						resultF.push({
 							compareObject: campare,

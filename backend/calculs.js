@@ -44,6 +44,7 @@ exports.werCalcul = function(diffObject,orgText){
 			N += 1;
 		}
 	});
+	console.log("For WER calcul");
 	console.log('removed = '+removed);
 	console.log('added = '+added);
 	console.log('subs = '+subs);
@@ -77,13 +78,17 @@ exports.precisionRecall = function(diffObject){
 		}
 		else {
 			part.value.split(' ').forEach(function(a){
-				//console.log('added:'+a+'/');
+				//console.log('right:'+a+'/');
 				if(a!==''){
 					right += 1;
 				}
 			})
 		}
 	});
+	//console.log("For precision-recall calcul");
+	//console.log('removed = '+removed);
+	//console.log('added = '+added);
+	//console.log('right = '+right);
 	//precision = tp/(tp+fp)
 	var precision = right/(right+added);
 	//recall = tp/(tp+fn)
