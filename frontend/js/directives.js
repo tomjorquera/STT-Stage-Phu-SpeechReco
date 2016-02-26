@@ -186,6 +186,7 @@ angular.module('myApp.directives', []).
 					      $scope.originalText = data.originalTextExport;
 					   }
 					   else {
+					   		$scope.originalText = "Missing!!";
 					   		var display = document.getElementById("compareObject");
 						    display.innerHTML = "Text file is missing so we can not campare it";
 					   }
@@ -244,6 +245,7 @@ angular.module('myApp.directives', []).
 				    }).
 				    error(function(data, status, headers, config) {
 				      $scope.transcribedText = 'Error!';
+				      $scope.isShow = false;
 				      transcribeButton.removeAttribute("disabled");
 				    });
 				}	
@@ -306,9 +308,9 @@ angular.module('myApp.directives', []).
 				    }).
 				    error(function(data, status, headers, config) {
 				      $scope.transcribedText = 'Error!';
+				      $scope.isShow = false;
 				      transcribeButton.removeAttribute("disabled");
 				    });
-
 				}
 			}
 		}
@@ -601,9 +603,11 @@ angular.module('myApp.directives', []).
 	            			if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
 	            				mySocket.connect('http://localhost:8080/',{'forceNew':true });
 		            		}
+
 	            		}).
 	            		error(function(data, status, headers, config) {
 	            			$scope.showIcon = false;
+	            			transcribeButton.removeAttribute("disabled");
 	            			console.log('transcribe corpus request error');
 			    		});
 			    	}

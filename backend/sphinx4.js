@@ -99,14 +99,15 @@ function transcribeBySphinx(filePath){
 	var async = require('async');
 	java.classpath.push(__dirname+"/../target/sphinx-4-lib-1.0-SNAPSHOT-jar-with-dependencies.jar");
 	
-	/*java.classpath.push(__dirname+'/lib/speechtotext.jar');
+	java.classpath.push(__dirname+'/lib/speechtotext.jar');
 	var S2T = java.import('AppTestSpeechReco');
 	var appSpeech = new S2T();
-	var resultFinal = appSpeech.transcribeSync(filePath);*/
+	var resultFinal = appSpeech.transcribeSync(filePath);
+	return resultFinal;
+	
 	//add sphinx-4 librairie
-
 	//Configuration
-	var Configuration = java.import("edu.cmu.sphinx.api.Configuration");
+	/*var Configuration = java.import("edu.cmu.sphinx.api.Configuration");
 	var FileInputStream = java.import("java.io.FileInputStream");
 	var SpeechResult = java.import("edu.cmu.sphinx.api.SpeechResult");
 	var Recognizer = java.import("edu.cmu.sphinx.api.StreamSpeechRecognizer");
@@ -135,7 +136,7 @@ function transcribeBySphinx(filePath){
 	        callback(null,'done');
 	    },
 	    function(callback){
-	    	/*console.log(4);
+	    	console.log(4);
 	    	var recognizer = new Recognizer(configuration);
 
 			var resultFinal = "";
@@ -149,13 +150,13 @@ function transcribeBySphinx(filePath){
 			console.log('result: '+resultFinal);
 			recognizer.stopRecognitionSync();
 			callback(null,'done');
-			return resultFinal;*/
+			return resultFinal;
 	    }
 	],
 	// optional callback 
 	function(err, results){
 	    console.log(results);
-	});
+	});*/
 };  
 
 //get the path of data necessary when it's an audio, recorded audio or text
