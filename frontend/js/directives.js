@@ -404,7 +404,7 @@ angular.module('myApp.directives', []).
 		return {
 			restrict: 'E',
 			templateUrl: 'partials/choose-input',
-			controller: function($scope){
+			controller: function($scope, $http){
 				$scope.chooseValue = 0;
 			    $scope.link ="";
 			    $scope.chooseOptions = [{value:1,name:"Audio File"},{value:2,name:"Your micro"},{value:3,name:"Corpus"}];//pas encore choisir
@@ -468,13 +468,23 @@ angular.module('myApp.directives', []).
 		return {
 			restrict:'E',
 			templateUrl: 'partials/choose-corpus',
-			controller: function($scope,choosedCorpus){
-				//list corpus
-				$scope.corpuses = ['list1','list2','list3','list4'];
-				//selected corpus
-				$scope.selection = [];
+			controller: function($scope,$http,choosedCorpus){
+				$scope.guide =false;
+				$http({
+	      			method: 'GET',
+	      			url: '/getcorpus'
+	    		}).
+        		success(function(data, status, headers, config) {
+					//list corpus
+					$scope.corpuses = data;
+					//selected corpus
+					$scope.selection = [];
+        		}).
+        		error(function(data, status, headers, config) {
+	      			console.log('Error!');
+	    		});
 				//clear selected corpus list
-				$scope.clearList = function(){
+	    		$scope.clearList = function(){
 					for (var i=0;i<$scope.selection.length;i++){
 						$scope.selection.pop();
 					}
@@ -484,6 +494,9 @@ angular.module('myApp.directives', []).
 					$scope.selection.push(corpus);
 					choosedCorpus.setCorpusName(corpus);
 				};
+				$scope.makeCorpusGuide=function(){
+					$scope.guide = !($scope.guide);
+				}
 			}
 		}
 	}).
@@ -521,14 +534,13 @@ angular.module('myApp.directives', []).
 							result.appendChild(span);
 						});
 						var br = document.createElement("br");
-						result.appendChild(br);
 						var info = document.createTextNode(' -> WER: '+data.WER+'/Precision: '+data.precision+'/Recall: '+data.recall+'/F-Score: '+data.fScore);
+						result.appendChild(info);
+						result.appendChild(br);
 						werSum += parseFloat(data.WER);
 						precisionSum += parseFloat(data.precision);
 						recallSum += parseFloat(data.recall);
-						fScoreSum += parseFloat(data.fScore);
-						result.appendChild(info);
-						result.appendChild(br);
+						fScoreSum += parseFloat(data.fScore);	
 					}
 				});	
 				mySocket.on('send last msg', function(data){
@@ -549,13 +561,12 @@ angular.module('myApp.directives', []).
 							result.appendChild(span);
 						});
 						var br = document.createElement("br");
-						var wer = document.createTextNode(' -> WER: '+data.WER+'/Precision: '+data.precision+'/Recall: '+data.recall+'/F-Score: '+data.fScore);
+						var info = document.createTextNode(' -> WER: '+data.WER+'/Precision: '+data.precision+'/Recall: '+data.recall+'/F-Score: '+data.fScore);
+						result.appendChild(info);
 						werSum += parseFloat(data.WER);
 						precisionSum += parseFloat(data.precision);
 						recallSum += parseFloat(data.recall);
 						fScoreSum += parseFloat(data.fScore);
-						result.appendChild(wer);
-						result.appendChild(br);
 					}
 					var averageWer = werSum/parseFloat(numAudio);
 					var averagePrecision = precisionSum/parseFloat(numAudio);

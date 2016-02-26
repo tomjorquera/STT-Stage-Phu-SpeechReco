@@ -39,7 +39,7 @@ exports.transcribeSphinx = function(req, res) {
 		      	case 'audio':
 			        if (textFile !== 'error'){ //text file is uploaded
 						//get the original text
-						var originalText = fs.readFileSync(textFile,"UTF-8").toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,""); 
+						var originalText = fs.readFileSync(textFile,"UTF-8").toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,""); 
 						fs.unlinkSync(textFile);
 						console.log('result: '+result);
 						console.log('org: '+originalText);
@@ -56,8 +56,6 @@ exports.transcribeSphinx = function(req, res) {
 								transformText.forEach(function(word){
 									textSimplifize+=word+' ';
 								});
-								console.log(resultSimplifize);
-								console.log(textSimplifize);
 								socket.emit('send msg audio',{
 									transcribedText: resultSimplifize,
 									compareObject: campareText(resultSimplifize, textSimplifize),
@@ -94,69 +92,39 @@ exports.transcribeSphinx = function(req, res) {
 };
 
 //transcribe by sphinx function that give the transcribed text in outpout
-function transcribeBySphinx(filePath){
+function transcribeBySphinx(filePath,num){
 	var java = require('java');
-	var async = require('async');
-	java.classpath.push(__dirname+"/../target/sphinx-4-lib-1.0-SNAPSHOT-jar-with-dependencies.jar");
-	
-	java.classpath.push(__dirname+'/lib/speechtotext.jar');
-	var S2T = java.import('AppTestSpeechReco');
-	var appSpeech = new S2T();
-	var resultFinal = appSpeech.transcribeSync(filePath);
+	if (num === undefined){
+		java.classpath.push(__dirname+'/lib/speechtotext.jar');	
+		var S2T = java.import('AppTestSpeechReco');
+		var appSpeech = new S2T();
+		var resultFinal = appSpeech.transcribeSync(filePath);
+	}
+	else{
+		java.classpath.push(__dirname+"/../target/sphinx-4-lib-1.0-SNAPSHOT-jar-with-dependencies.jar");
+		//add sphinx-4 librairie
+		//Configuration
+		var Configuration = java.import("edu.cmu.sphinx.api.Configuration");
+		var FileInputStream = java.import("java.io.FileInputStream");
+		var SpeechResult = java.import("edu.cmu.sphinx.api.SpeechResult");
+		var Recognizer = java.import("edu.cmu.sphinx.api.StreamSpeechRecognizer");
+		var configuration = new Configuration();
+		configuration.setAcousticModelPathSync("resource:/edu/cmu/sphinx/models/en-us/en-us");
+		configuration.setDictionaryPathSync("resource:/edu/cmu/sphinx/models/en-us/cmudict-en-us.dict");
+		configuration.setLanguageModelPathSync("resource:/edu/cmu/sphinx/models/en-us/en-us.lm.bin");
+		var recognizer = new Recognizer(configuration);
+		var resultFinal = "";
+		var fileInputStream = new FileInputStream(filePath);
+		recognizer.startRecognitionSync(fileInputStream);
+		var result;
+		while ((result = recognizer.getResultSync()) !== null) {
+			resultFinal = resultFinal + result.getHypothesisSync() + ' ';
+			console.log('result: '+result.getHypothesisSync());
+		}
+		console.log('result: '+resultFinal);
+		recognizer.stopRecognitionSync();
+	}
 	return resultFinal;
-	
-	//add sphinx-4 librairie
-	//Configuration
-	/*var Configuration = java.import("edu.cmu.sphinx.api.Configuration");
-	var FileInputStream = java.import("java.io.FileInputStream");
-	var SpeechResult = java.import("edu.cmu.sphinx.api.SpeechResult");
-	var Recognizer = java.import("edu.cmu.sphinx.api.StreamSpeechRecognizer");
-
-	var configuration = new Configuration();
-	async.series([
-	    function(callback){
-	        // do some stuff ... 
-	        // Set path to acoustic model.
-	        setTimeout(function(){console.log(1);},2000);
-			//configuration.setAcousticModelPathSync("resource:/edu/cmu/sphinx/models/en-us/en-us");	
-	        callback(null);
-	    },
-	    function(callback){
-	        // do some more stuff ... 
-			// Set path to dictionary.
-			setTimeout(function(){console.log(2);},1000);
-			//configuration.setDictionaryPathSync("resource:/edu/cmu/sphinx/models/en-us/cmudict-en-us.dict");
-	        callback(null);
-	    },
-	    function(callback){
-	        // do some more stuff ...
-	        // Set language model.
-			setTimeout(function(){console.log(3);},500);
-			//configuration.setLanguageModelPathSync("resource:/edu/cmu/sphinx/models/en-us/en-us.lm.bin");
-	        callback(null,'done');
-	    },
-	    function(callback){
-	    	console.log(4);
-	    	var recognizer = new Recognizer(configuration);
-
-			var resultFinal = "";
-			var fileInputStream = new FileInputStream(filePath);
-			recognizer.startRecognitionSync(fileInputStream);
-			var result;
-			while ((result = recognizer.getResultSync()) !== null) {
-			  	resultFinal = resultFinal + result.getHypothesisSync() + ' ';
-			  	console.log('result: '+result.getHypothesisSync());
-			}
-			console.log('result: '+resultFinal);
-			recognizer.stopRecognitionSync();
-			callback(null,'done');
-			return resultFinal;
-	    }
-	],
-	// optional callback 
-	function(err, results){
-	    console.log(results);
-	});*/
 };  
 
 //get the path of data necessary when it's an audio, recorded audio or text

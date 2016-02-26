@@ -1,3 +1,5 @@
+"use strict";
+
 var io;
 
 exports.init = function(server){

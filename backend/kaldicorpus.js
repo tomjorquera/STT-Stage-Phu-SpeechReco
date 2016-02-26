@@ -1,3 +1,5 @@
+"use strict";
+
 //for corpus
 exports.transcribeCorpusKaldi = function(req, res) {
 	console.log('Kaldi recoie requete: '+req.params.corpusName);

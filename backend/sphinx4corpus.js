@@ -1,3 +1,5 @@
+"use strict";
+
 //for corpus
 exports.transcribeCorpusSphinx = function(req, res) {
 	console.log('Sphinx recoie requete: '+req.params.corpusName);
@@ -16,6 +18,14 @@ exports.transcribeCorpusSphinx = function(req, res) {
 	var fScoreSum = 0;
 	var numAudio = 0;
 
+	var java = require('java');
+
+	/*java.classpath.push(__dirname+"/../target/sphinx-4-lib-1.0-SNAPSHOT-jar-with-dependencies.jar");
+	var Configuration = java.import("edu.cmu.sphinx.api.Configuration");
+	var configuration = new Configuration();
+	configuration.setAcousticModelPathSync("resource:/edu/cmu/sphinx/models/en-us/en-us");
+	configuration.setDictionaryPathSync("resource:/edu/cmu/sphinx/models/en-us/cmudict-en-us.dict");
+	configuration.setLanguageModelPathSync("resource:/edu/cmu/sphinx/models/en-us/en-us.lm.bin");*/
 	function analize(i){
 	    var files = lines[i].toString().split(' ');
     	txtName = files[1];
@@ -25,12 +35,28 @@ exports.transcribeCorpusSphinx = function(req, res) {
 	};	
 
     //transcribe by sphinx function that give the transcribed text in outpout
-	function transcribeBySphinx(audioName,txtName,i){
-		var java = require('java');
-		java.classpath.push(__dirname+'/lib/speechtotext.jar');
-		var S2T = java.import('AppTestSpeechReco');
-		var appSpeech = new S2T();
-		var result = appSpeech.transcribeSync(audioFilesFolder+audioName).replace(/\n/g," ");
+	function transcribeBySphinx(audioName,txtName,i,num){
+		if (num === undefined){
+			java.classpath.push(__dirname+'/lib/speechtotext.jar');
+			var S2T = java.import('AppTestSpeechReco');
+			var appSpeech = new S2T();
+			var result = appSpeech.transcribeSync(audioFilesFolder+audioName).replace(/\n/g," ");
+		}
+		else{
+			//Configuration			var FileInputStream = java.import("java.io.FileInputStream");
+			var SpeechResult = java.import("edu.cmu.sphinx.api.SpeechResult");
+			var Recognizer = java.import("edu.cmu.sphinx.api.StreamSpeechRecognizer");
+			
+			var recognizer = new Recognizer(configuration);
+			var fileInputStream = new FileInputStream(audioFilesFolder+audioName);
+			recognizer.startRecognitionSync(fileInputStream);
+			var resultE;
+			while ((resultE = recognizer.getResultSync()) !== null) {
+				result= result + resultE.getHypothesisSync() + ' ';
+				console.log('result: '+resultE.getHypothesisSync());
+			}
+			recognizer.stopRecognitionSync();
+		}
 		console.log('trans:'+result);
 		process.nextTick(function(){
 			var originalText = fs.readFileSync(textFilesFolder+txtName,"UTF-8").toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");

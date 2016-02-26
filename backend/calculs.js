@@ -1,3 +1,5 @@
+"use strict";
+
 exports.werCalcul = function(diffObject,orgText){
 	var added = 0;
 	var removed = 0;
