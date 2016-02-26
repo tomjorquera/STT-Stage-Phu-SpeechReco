@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "dependencies": {
+    "async": "^1.5.2",
     "body-parser": "^1.0.2",
     "connect-busboy": "0.0.2",
     "diff": "^2.2.1",

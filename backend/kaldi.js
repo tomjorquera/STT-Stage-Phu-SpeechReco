@@ -38,7 +38,7 @@ exports.transcribeKaldi = function(req, res) {
 				//the callback function that will transfer the socket that composes the transcribe text, original text and the campare object
 				function callbackAudio(result){
 					if (textFile !== 'error'){ //text file is uploaded
-						var originalText = fs.readFileSync(textFile,"UTF-8").toLowerCase(); 
+						var originalText = fs.readFileSync(textFile,"UTF-8").toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,""); 
 						fs.unlinkSync(textFile);
 						fs.unlinkSync(audioFile);
 						console.log("kaldi renvoie resultat");
@@ -55,13 +55,10 @@ exports.transcribeKaldi = function(req, res) {
 								transformText.forEach(function(word){
 									textSimplifize+=word+' ';
 								});
-								var textSimplifizeF = textSimplifize.replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
-								//var calcul_WER = require('./calculs.js');
-								//console.log(calcul_WER.werCalcul(campareText(resultSimplifize, textSimplifizeF),textSimplifizeF));
 								socket.emit('send msg audio', {
 									transcribedText: resultSimplifize,
-									compareObject: campareText(resultSimplifize, textSimplifizeF),
-									originalTextExport: textSimplifizeF,
+									compareObject: campareText(resultSimplifize, textSimplifize),
+									originalTextExport: textSimplifize,
 								});
 							});
 						});	
@@ -69,7 +66,7 @@ exports.transcribeKaldi = function(req, res) {
 					}
 					else {//text file is NOT uploaded
 						var resultTable = result.split(' ');
-						lemmer.lemmatize(resultTable, function(err, tranformResult){
+						lemmer.lemmatize(resultTable, function(err, transformResult){
 							var resultSimplifize='';
 							transformResult.forEach(function(word){
 								resultSimplifize+=word+' ';
@@ -108,7 +105,6 @@ function transcribeByKaldi(kaldiPath, filePath, callback){
 	var exec = require('child_process').exec;
 	var cmd1 = 'cd '+kaldiPath+'/egs/online-nnet2/';
 	var cmd2 = './run.sh '+kaldiPath+' '+filePath;
-	console.log(cmd1+' ; '+cmd2);
 	exec(cmd1+' ; '+cmd2, function(error, stdout, stderr) {
 		if (stdout !== ""){
 			callback(stdout);

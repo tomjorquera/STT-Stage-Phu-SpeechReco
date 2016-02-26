@@ -2,8 +2,6 @@
 exports.transcribeCorpusSphinx = function(req, res) {
 	console.log('Sphinx recoie requete: '+req.params.corpusName);
 	var fs = require('fs-extra');
-	var calculs = require('./calculs.js');
-	var lemmer =  require('lemmer');
 	var corpus = req.params.corpusName;
 	var corpusFolder = __dirname+'/../corpus/'+corpus+'/';
 	var audioFilesFolder = __dirname+'/../corpus/'+corpus+'/wav-for-sphinx/';
@@ -11,7 +9,7 @@ exports.transcribeCorpusSphinx = function(req, res) {
 	var txtName;
 	var audioName;
 	var lines = fs.readFileSync(corpusFolder+corpus+'.txt').toString().split('\n');
-	var resultF = [];
+	var listResult = [];
 	var wersSum = 0;
 	var precisionSum = 0;
 	var recallSum = 0;
@@ -29,119 +27,77 @@ exports.transcribeCorpusSphinx = function(req, res) {
     //transcribe by sphinx function that give the transcribed text in outpout
 	function transcribeBySphinx(audioName,txtName,i){
 		var java = require('java');
-		//java.classpath.push(__dirname+"/../target/sphinx-4-lib-1.0-SNAPSHOT-jar-with-dependencies.jar");
 		java.classpath.push(__dirname+'/lib/speechtotext.jar');
 		var S2T = java.import('AppTestSpeechReco');
 		var appSpeech = new S2T();
-		var result = appSpeech.transcribeSync(audioFilesFolder+audioName);
-		
+		var result = appSpeech.transcribeSync(audioFilesFolder+audioName).replace(/\n/g," ");
+		console.log('trans:'+result);
 		process.nextTick(function(){
-			var originalText = fs.readFileSync(textFilesFolder+txtName,"UTF-8").toLowerCase();
+			var originalText = fs.readFileSync(textFilesFolder+txtName,"UTF-8").toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+			console.log('org: '+originalText);
 			var resultTable = result.split(' ');
 			var textTable = originalText.split(' ');
 	    	console.log('Sphinx-4 sends transcript of file '+audioName+'>>>>>');
-	    	//simplifize
-	    	lemmer.lemmatize(resultTable, function(err, transformResult){
-				var resultSimplifize='';
-				transformResult.forEach(function(word){
-					resultSimplifize+=word+' ';
-				});
-				lemmer.lemmatize(textTable, function(err, transformText){
-					var textSimplifize='';
-					transformText.forEach(function(word){
-						textSimplifize+=word+' ';
-					});
-					var textSimplifizeF = textSimplifize.replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
-					var wer = calculs.werCalcul(campareText(resultSimplifize, textSimplifizeF),textSimplifizeF);
-					//console.log(resultF);
-					console.log('Sphinx-4 is done with '+audioName+'>>>>>');
-					var campare = campareText(resultSimplifize, textSimplifizeF);
-					var precisionRecall = calculs.precisionRecall(campare);
-					numAudio += 1;
-					wersSum += parseFloat(wer);
-					precisionSum += parseFloat(precisionRecall.Precision);
-					recallSum += parseFloat(precisionRecall.Recall);
-					fScoreSum += parseFloat(precisionRecall.FScore);
-					console.log(wersSum+' '+precisionSum+' '+recallSum+' '+fScoreSum);
-					if (i !== (lines.length-1)){
-						resultF.push({
-							compareObject: campare,
-							WER: wer,
-							precision: precisionRecall.Precision,
-							recall: precisionRecall.Recall,
-							fScore: precisionRecall.FScore,	
-							Average: 'unknown'
-						});
-						analize(i+1);
-					}
-					else {
-						var averageWer = wersSum/numAudio;
-						var averagePrecision = precisionSum/numAudio;
-						var averageRecall = recallSum/numAudio;
-						var averageFScore = fScoreSum/numAudio;
-						resultF.push({
-							compareObject: campare,
-							WER: wer,
-							precision: precisionRecall.Precision,
-							recall: precisionRecall.Recall,
-							fScore: precisionRecall.FScore,	
-							Average: 'WER: '+averageWer.toFixed(3)
-											+'/Precision: '+averagePrecision.toFixed(3)
-											+'/Recall: '+averageRecall.toFixed(3)
-											+'/F-Score: '+averageFScore.toFixed(3)
-						});
-						res.json(resultF);
-					}
-				});
-			});
+	    	listResult.push({
+	    		Text: textTable,
+	    		Result: resultTable
+	    	})
+	    	console.log('Sphinx-4 is done with '+audioName+'>>>>>');
+	    	if(i!==(lines.length-1)) analize(i+1);
+	    	else {
+	    		res.send(202);
+	    		setTimeout(simplifize(listResult,0),1000);	
+	    	}
 		});
-		//callback(audioName,txtName,i);
-		//add sphinx-4 librairie
-
-		//Configuration
-		/*var Configuration = java.import("edu.cmu.sphinx.api.Configuration");
-		var FileInputStream = java.import("java.io.FileInputStream");
-		var SpeechResult = java.import("edu.cmu.sphinx.api.SpeechResult");
-		var Recognizer = java.import("edu.cmu.sphinx.api.StreamSpeechRecognizer");
-
-		var configuration = new Configuration();
-
-
-		// Set path to acoustic model.
-		configuration.setAcousticModelPathSync("resource:/edu/cmu/sphinx/models/en-us/en-us");
-		// Set path to dictionary.
-		configuration.setDictionaryPathSync("resource:/edu/cmu/sphinx/models/en-us/cmudict-en-us.dict");
-		// Set language model.
-		configuration.setLanguageModelPathSync("resource:/edu/cmu/sphinx/models/en-us/en-us.lm.bin");
-
-		//try{
-		  var recognizer = new Recognizer(configuration);
-		//}
-		//catch (e){
-		//  console.log(e.cause.getMessageSync());
-		//}
-
-		var resultFinal = "";
-		console.log(1);
-		var fileInputStream = new FileInputStream(filePath);
-		console.log(2);
-		recognizer.startRecognitionSync(fileInputStream);
-		console.log(3);
-		var result;
-		while ((result = recognizer.getResultSync()) !== null) {
-		  resultFinal = resultFinal + result.getHypothesisSync() + ' ';
-		  console.log(result.getHypothesisSync());
-		  console.log(4);
-		}
-
-		recognizer.stopRecognitionSync();
-		console.log(5);*/
-		//return result;
 	};
 
 	analize(0);  
 };
-
+function simplifize(listResult,i){
+	var socket = require('./websocket.js').getSocket();
+	var lemmer =  require('lemmer');
+	var calculs = require('./calculs.js');
+	var item = listResult[i];
+	var resultTable = item.Result;
+	var textTable = item.Text;
+	//simplifize
+	lemmer.lemmatize(resultTable, function(err, transformResult){
+		var resultSimplifize='';
+		transformResult.forEach(function(word){
+			resultSimplifize+=word+' ';
+		});
+		lemmer.lemmatize(textTable, function(err, transformText){
+			var textSimplifize='';
+			transformText.forEach(function(word){
+				textSimplifize+=word+' ';
+			});
+			var wer = calculs.werCalcul(campareText(resultSimplifize, textSimplifize),textSimplifize);
+			var campare = campareText(resultSimplifize, textSimplifize);
+			var precisionRecall = calculs.precisionRecall(campare);
+			if (i !== (listResult.length-1)){
+				socket.emit('send msg',{
+					compareObject: campare,
+					WER: wer,
+					precision: precisionRecall.Precision,
+					recall: precisionRecall.Recall,
+					fScore: precisionRecall.FScore
+				});
+				console.log('send result');
+				simplifize(listResult,i+1);
+			}
+			else {
+				socket.emit('send last msg',{
+					compareObject: campare,
+					WER: wer,
+					precision: precisionRecall.Precision,
+					recall: precisionRecall.Recall,
+					fScore: precisionRecall.FScore
+				});
+				console.log('send result');
+			}
+		});
+	});
+}
 
 
 //get the path of data necessary when it's an audio, recorded audio or text

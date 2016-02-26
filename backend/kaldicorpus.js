@@ -26,7 +26,8 @@ exports.transcribeCorpusKaldi = function(req, res) {
 	};	
 
 	function callback(i, result,audioName,txtName){
-		var originalText = fs.readFileSync(textFilesFolder+txtName,"UTF-8").toLowerCase();
+		var originalText = fs.readFileSync(textFilesFolder+txtName,"UTF-8").toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+		console.log('org: '+originalText);
 		var resultTable = result.split(' ');
 		var textTable = originalText.split(' ');
 		//send socket to client time by time
@@ -42,13 +43,12 @@ exports.transcribeCorpusKaldi = function(req, res) {
 				transformText.forEach(function(word){
 					textSimplifize+=word+' ';
 				});
-				var textSimplifizeF = textSimplifize.replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
-				var campare = campareText(resultSimplifize, textSimplifizeF);
+				var campare = campareText(resultSimplifize, textSimplifize);
 				var precisionRecall = calculs.precisionRecall(campare);
 				if (i !== (lines.length-1)){
 					socket.emit('send msg', {
 						compareObject: campare,
-						WER: calculs.werCalcul(campare,textSimplifizeF),	
+						WER: calculs.werCalcul(campare,textSimplifize),	
 						precision: precisionRecall.Precision,
 						recall: precisionRecall.Recall,
 						fScore: precisionRecall.FScore	
@@ -58,7 +58,7 @@ exports.transcribeCorpusKaldi = function(req, res) {
 				} else {
 					socket.emit('send last msg', {
 						compareObject: campare,
-						WER: calculs.werCalcul(campare,textSimplifizeF),
+						WER: calculs.werCalcul(campare,textSimplifize),
 						precision: precisionRecall.Precision,
 						recall: precisionRecall.Recall,
 						fScore: precisionRecall.FScore	
@@ -77,12 +77,12 @@ function transcribeByKaldi(kaldiPath,filePath,i,txtName,audioName,callback){
 	var exec = require('child_process').exec;
 	var cmd1 = 'cd '+kaldiPath+'/egs/online-nnet2/';
 	var cmd2 = './run.sh '+kaldiPath+' '+filePath;
-	console.log(cmd1+' ; '+cmd2);
 	exec(cmd1+' ; '+cmd2, function(error, stdout, stderr) {
 		//console.log('fini '+audioName+' '+stdout);
 		if (stdout !== ""){
+			console.log('trans: '+stdout);
 			callback(i,stdout,audioName,txtName);
-		} 
+		} else console.log('error');
 	}); 
 };
 

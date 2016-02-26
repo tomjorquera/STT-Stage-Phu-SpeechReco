@@ -70,6 +70,19 @@ app.post('/upload/:datatype/:filename', upload.uploadFile);
 // redirect all others to the index (HTML5 history)
 app.get('*', routes.index);
 
+//convert corpus
+/*var exec = require('child_process').exec;
+var fs = require('fs-extra');
+fs.readdirSync(__dirname+'/corpus/list4/wav-for-kaldi/').forEach(function(audioName){
+  var cmd1 = 'cd '+__dirname+'/corpus/list4/wav-for-kaldi/';
+  var cmd2 = 'sox '+audioName+' -c 1 -r 8000 -b 16 '+audioName+'-convertedforkaldi.wav';
+  console.log(cmd1+' ; '+cmd2);
+  exec(cmd1+' ; '+cmd2, function(error, stdout, stderr) {
+      console.log('convert ok');
+  });
+})*/
+
+
 /**
  * Start Server
  */

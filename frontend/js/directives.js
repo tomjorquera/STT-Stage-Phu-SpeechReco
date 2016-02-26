@@ -171,16 +171,16 @@ angular.module('myApp.directives', []).
 					if (data.compareObject !== undefined){
 					  if (data.compareObject !== ""){
 					      var display = document.getElementById("compareObject");
-					      display.innerHTML = "Compare text here : ";
+					      display.innerHTML = "&bull; Compare text here : ";
 					      data.compareObject.forEach(function(part){
 					        // green for additions, red for deletions
-					        // grey for common parts
+					        // white for common parts
 					        var color = part.added ? 'green' :
-					          part.removed ? 'red' : 'grey';
+					          part.removed ? 'red' : 'white';
 					        var span = document.createElement('span');
 					        span.style.color = color;
-					        span.appendChild(document
-					          .createTextNode(part.value));
+					        span.appendChild(document.createTextNode(part.value));
+					        if (part.removed) span.appendChild(document.createTextNode(' '));
 					        display.appendChild(span);
 					      });
 					      $scope.originalText = data.originalTextExport;
@@ -205,17 +205,18 @@ angular.module('myApp.directives', []).
 				//function executes when clicking transcribe button
 				$scope.transcribeRequest =function (){
 					//if tool is not choosen, just give the error msg and end
-					if (toolSelectedFactory.getSelectedTool==='unknown') {
+					if (toolSelectedFactory.getSelectedTool()==='unknown') {
 						$scope.errorMessage = "Choose a toolkit before!";
 						return 0;
 					};
 					//if the toolkit is kaldi, create a socket to server
-					if (toolSelectedFactory.getSelectedTool === "Kaldi"){
+					if (toolSelectedFactory.getSelectedTool() === "Kaldi"){
 						mySocket.connect('http://localhost:8080/',{'forceNew':true });
 					}
 					//if the toolkit is sphinx-4, disconnect the socket
-					if (toolSelectedFactory.getSelectedTool === "Sphinx-4"){
+					if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
 						mySocket.disconnect();
+						console.log('socket disconnected');
 					}
 					//reset all upload file status, convert status, error message
 					$scope.uploadAudioStatus="";
@@ -227,7 +228,7 @@ angular.module('myApp.directives', []).
 					//show loading icon and hide the transcribe zone
 					$scope.isShow = true;						
 					//reset all part of transcribe template
-					document.getElementById("compareObject").innerHTML = "Compare text here :";
+					document.getElementById("compareObject").innerHTML = "&bull; Compare text here :";
 					$scope.transcribedText = "";
 					$scope.originalText = "";
 					//send request to server
@@ -237,37 +238,8 @@ angular.module('myApp.directives', []).
 				    }).
 				    success(function(data, status, headers, config) {
 				      console.log('requete accepte');
-				      //take result when it's sent by res.json (sphinx4 case)
 				      if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
-				      	console.log(data.transcribedText); 
-						$scope.isShow = false;
-						$scope.transcribedText = data.transcribedText;
-						//affichage de comparaison
-						if (data.compareObject !== undefined){
-						  if (data.compareObject !== ""){
-						      var display = document.getElementById("compareObject");
-						      display.innerHTML = "Compare text here : ";
-						      data.compareObject.forEach(function(part){
-						        // green for additions, red for deletions
-						        // grey for common parts
-						        var color = part.added ? 'green' :
-						          part.removed ? 'red' : 'grey';
-						        var span = document.createElement('span');
-						        span.style.color = color;
-						        span.appendChild(document
-						          .createTextNode(part.value));
-						        display.appendChild(span);
-						      });
-						      $scope.originalText = data.originalTextExport;
-						   } else {
-						   		var display = document.getElementById("compareObject");
-						    	display.innerHTML = "Text file is missing so we can not campare it";
-						   }
-						}
-						else {
-							$scope.errorMessage = "Any error happends so the compare object is undefined";
-						}
-						transcribeButton.removeAttribute("disabled");
+				      	mySocket.connect('http://localhost:8080/',{'forceNew':true });
 				      }
 				    }).
 				    error(function(data, status, headers, config) {
@@ -329,12 +301,8 @@ angular.module('myApp.directives', []).
 				    success(function(data, status, headers, config) {
 						//take result when it's sent by res.json (sphinx4 case)
 				      	if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
-							$scope.isShow = false;
-							$scope.errorMessage=""; 
-							console.log(data.transcribedText);
-							$scope.transcribedText = data.transcribedText;
-							transcribeButton.removeAttribute("disabled");
-						}
+					      	mySocket.connect('http://localhost:8080/',{'forceNew':true });
+					    }
 				    }).
 				    error(function(data, status, headers, config) {
 				      $scope.transcribedText = 'Error!';
@@ -501,7 +469,6 @@ angular.module('myApp.directives', []).
 			controller: function($scope,choosedCorpus){
 				//list corpus
 				$scope.corpuses = ['list1','list2','list3','list4'];
-				console.log($scope.corpuses);
 				//selected corpus
 				$scope.selection = [];
 				//clear selected corpus list
@@ -514,7 +481,6 @@ angular.module('myApp.directives', []).
 				$scope.chooseCorpusAction = function(corpus){
 					$scope.selection.push(corpus);
 					choosedCorpus.setCorpusName(corpus);
-					console.log($scope.selection);
 				};
 			}
 		}
@@ -540,14 +506,16 @@ angular.module('myApp.directives', []).
 					numAudio += 1;
 					$scope.transcribedText = data.transcribedText;	
 					if (data.compareObject !== ""){
+						result.appendChild(document.createTextNode("- "));	
 						data.compareObject.forEach(function(part){
 							// green for additions, red for deletions
-							// grey for common parts
+							// white for common parts
 							var color = part.added ? 'green' :
-							part.removed ? 'red' : 'grey';
+							part.removed ? 'red' : 'white';
 							var span = document.createElement('span');
 							span.style.color = color;
-							span.appendChild(document.createTextNode(part.value));		
+							span.appendChild(document.createTextNode(part.value));	
+							if (part.removed) span.appendChild(document.createTextNode(' '));	
 							result.appendChild(span);
 						});
 						var br = document.createElement("br");
@@ -566,14 +534,16 @@ angular.module('myApp.directives', []).
 					numAudio += 1;
 					$scope.transcribedText = data.transcribedText;	
 					if (data.compareObject !== ""){
+						result.appendChild(document.createTextNode("- "));	
 						data.compareObject.forEach(function(part){
 							// green for additions, red for deletions
-							// grey for common parts
+							// white for common parts
 							var color = part.added ? 'green' :
-							part.removed ? 'red' : 'grey';
+							part.removed ? 'red' : 'white';
 							var span = document.createElement('span');
 							span.style.color = color;
-							span.appendChild(document.createTextNode(part.value));		
+							span.appendChild(document.createTextNode(part.value));	
+							if (part.removed) span.appendChild(document.createTextNode(' '));
 							result.appendChild(span);
 						});
 						var br = document.createElement("br");
@@ -586,10 +556,7 @@ angular.module('myApp.directives', []).
 						result.appendChild(br);
 					}
 					var averageWer = werSum/parseFloat(numAudio);
-					console.log(averageWer);
 					var averagePrecision = precisionSum/parseFloat(numAudio);
-					console.log(precisionSum);
-					console.log(averagePrecision);
 					var averageRecall = recallSum/parseFloat(numAudio);
 					var averageFScore = fScoreSum/parseFloat(numAudio);
 					$scope.average = 'Average: WER: '+averageWer.toFixed(3)
@@ -632,30 +599,7 @@ angular.module('myApp.directives', []).
 	            			console.log('transcribe corpus request sent');
 	            			//affichage de result
 	            			if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
-	            				console.log('transcribe corpus request sent');
-		            			data.forEach(function(audio){
-		            				if (audio !== []){
-										audio.compareObject.forEach(function(part){
-											// green for additions, red for deletions
-											// grey for common parts
-											var color = part.added ? 'green' :
-											part.removed ? 'red' : 'grey';
-											var span = document.createElement('span');
-											span.style.color = color;
-											span.appendChild(document.createTextNode(part.value));		
-											result.appendChild(span);
-										});
-										var br = document.createElement("br");
-										var info = document.createTextNode(' -> WER: '+audio.WER+'/Precision: '+audio.precision+'/Recall: '+audio.recall+'/F-Score: '+audio.fScore);
-										result.appendChild(info);
-										result.appendChild(br);
-									}
-									if (audio.Average !== 'unknown'){
-										$scope.average = 'Average: '+audio.Average;
-									}
-	            				});
-	            				$scope.showIcon = false;
-	            				transcribeButton.removeAttribute("disabled");
+	            				mySocket.connect('http://localhost:8080/',{'forceNew':true });
 		            		}
 	            		}).
 	            		error(function(data, status, headers, config) {
