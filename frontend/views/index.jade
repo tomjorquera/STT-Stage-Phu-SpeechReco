@@ -2,18 +2,9 @@ extends ./layout
 
 block body
   div(ng-controller='AppCtrl')
-      .container
+      .container.bis
           .jumbotron
-              h2 {{name}}
-              hr
-              choose-input
-              br            
-              hr
               div(ng-view)
-              br
-              br
-
-
              
   script(src='js/app.js')
   script(src='js/services.js')

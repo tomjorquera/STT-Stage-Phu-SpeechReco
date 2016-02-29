@@ -24,10 +24,11 @@ html(ng-app="myApp")
                         span.icon-bar
                         span.icon-bar
                         span.icon-bar
-                    a.navbar-brand(href='#') Project name
+                        span.icon-bar
+                    a.navbar-brand(href='#') Home
                 .navbar-collapse.collapse
                     ul.nav.navbar-nav
-                        - var obj = { 'home':'Home', 'about':'About' }
+                        - var obj = { 'audiofile':'Audio', 'yourmicro':'Micro', 'corpus':'Corpus' }
                             - each val, key in obj
                                 - if (id == key)
                                     li.active
