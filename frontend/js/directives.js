@@ -537,7 +537,10 @@ angular.module('myApp.directives', []).
 						var info = document.createTextNode(' -> WER: '+data.WER+'/Precision: '+data.precision+'/Recall: '+data.recall+'/F-Score: '+data.fScore);
 						result.appendChild(info);
 						result.appendChild(br);
+						var str =  werSum+'+'+data.WER+'=';
 						werSum += parseFloat(data.WER);
+						console.log(str+werSum);
+						console.log(numAudio);
 						precisionSum += parseFloat(data.precision);
 						recallSum += parseFloat(data.recall);
 						fScoreSum += parseFloat(data.fScore);	
@@ -563,7 +566,10 @@ angular.module('myApp.directives', []).
 						var br = document.createElement("br");
 						var info = document.createTextNode(' -> WER: '+data.WER+'/Precision: '+data.precision+'/Recall: '+data.recall+'/F-Score: '+data.fScore);
 						result.appendChild(info);
+						var str =  werSum+'+'+data.WER+'=';
 						werSum += parseFloat(data.WER);
+						console.log(str+werSum);
+						console.log(numAudio);
 						precisionSum += parseFloat(data.precision);
 						recallSum += parseFloat(data.recall);
 						fScoreSum += parseFloat(data.fScore);

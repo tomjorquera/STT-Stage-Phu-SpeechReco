@@ -72,7 +72,7 @@ exports.transcribeCorpusSphinx = function(req, res) {
 	    	if(i!==(lines.length-1)) analize(i+1);
 	    	else {
 	    		res.send(202);
-	    		setTimeout(simplifize(listResult,0),2000);	
+	    		setTimeout(simplifize(listResult,0),1000);	
 	    	}
 		});
 	};
@@ -100,27 +100,29 @@ function simplifize(listResult,i){
 			var wer = calculs.werCalcul(campareText(resultSimplifize, textSimplifize),textSimplifize);
 			var campare = campareText(resultSimplifize, textSimplifize);
 			var precisionRecall = calculs.precisionRecall(campare);
-			if (i !== (listResult.length-1)){
-				socket.emit('send msg',{
-					compareObject: campare,
-					WER: wer,
-					precision: precisionRecall.Precision,
-					recall: precisionRecall.Recall,
-					fScore: precisionRecall.FScore
-				});
-				console.log('send result');
-				simplifize(listResult,i+1);
-			}
-			else {
-				socket.emit('send last msg',{
-					compareObject: campare,
-					WER: wer,
-					precision: precisionRecall.Precision,
-					recall: precisionRecall.Recall,
-					fScore: precisionRecall.FScore
-				});
-				console.log('send result');
-			}
+			setTimeout(function(){
+				if (i !== (listResult.length-1)){
+					socket.emit('send msg',{
+						compareObject: campare,
+						WER: wer,
+						precision: precisionRecall.Precision,
+						recall: precisionRecall.Recall,
+						fScore: precisionRecall.FScore
+					});
+					console.log('send result');
+					simplifize(listResult,i+1);
+				}
+				else {
+					socket.emit('send last msg',{
+						compareObject: campare,
+						WER: wer,
+						precision: precisionRecall.Precision,
+						recall: precisionRecall.Recall,
+						fScore: precisionRecall.FScore
+					});
+					console.log('send result');
+				}
+			},1000);
 		});
 	});
 }
