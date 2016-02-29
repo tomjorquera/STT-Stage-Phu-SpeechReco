@@ -24,7 +24,7 @@ exports.werCalcul = function(diffObject,orgText){
 			})
 		}
 	});
-	//calcul subs
+	//calcul subs = min(added,removed)
 	if (removed === added){
 		subs = removed;
 		removed = 0;

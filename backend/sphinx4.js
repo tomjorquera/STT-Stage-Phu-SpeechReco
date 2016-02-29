@@ -87,7 +87,7 @@ exports.transcribeSphinx = function(req, res) {
 		      	default:
 		        	break;
 		    };  
-    	},1000);
+    	},2000);
     }	    
 };
 
@@ -113,16 +113,16 @@ function transcribeBySphinx(filePath,num){
 		configuration.setDictionaryPathSync("resource:/edu/cmu/sphinx/models/en-us/cmudict-en-us.dict");
 		configuration.setLanguageModelPathSync("resource:/edu/cmu/sphinx/models/en-us/en-us.lm.bin");
 		var recognizer = new Recognizer(configuration);
-		var resultFinal = "";
 		var fileInputStream = new FileInputStream(filePath);
 		recognizer.startRecognitionSync(fileInputStream);
+		var resultFinal = "";
 		var result;
 		while ((result = recognizer.getResultSync()) !== null) {
 			resultFinal = resultFinal + result.getHypothesisSync() + ' ';
 			console.log('result: '+result.getHypothesisSync());
 		}
-		console.log('result: '+resultFinal);
 		recognizer.stopRecognitionSync();
+		console.log('result: '+resultFinal);
 	}
 	return resultFinal;
 };  
