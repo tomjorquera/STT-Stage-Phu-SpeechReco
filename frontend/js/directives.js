@@ -510,11 +510,11 @@ angular.module('myApp.directives', []).
 				$scope.average;
 				var transcribeButton = document.getElementById('transcribe-button');
 				var result = document.getElementById('res');
-				var werSum = 0;
-				var numAudio = 0;
-				var precisionSum = 0;
-				var recallSum = 0;
-				var fScoreSum = 0;
+				var werSum;
+				var numAudio;
+				var precisionSum;
+				var recallSum;
+				var fScoreSum;
 				//take result if it's sent by socket (for kaldi case)
 				mySocket.on('send msg',function(data){	
 					console.log('recoie un message from server');
@@ -587,6 +587,11 @@ angular.module('myApp.directives', []).
 				});
 				//function when click transcribe button
 				$scope.requestAction = function(){
+					werSum = 0;
+					numAudio = 0;
+					precisionSum = 0;
+					recallSum = 0;
+					fScoreSum = 0;
 					$scope.average ='';
 					//if the toolkit is sphinx-4, disconnect the socket
 					if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
