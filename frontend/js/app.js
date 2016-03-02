@@ -15,16 +15,13 @@ angular.module('myApp', [
 config(function($routeProvider, $locationProvider) {
   $routeProvider.
     when('/audiofile', {
-      templateUrl: 'partials/audioFilePartial',
-      controller: 'MyCtrl1' 
+      templateUrl: 'partials/audioFilePartial'
     }).
     when('/yourmicro', {
-      templateUrl: 'partials/microPartial',
-      controller: 'MyCtrl2'
+      templateUrl: 'partials/microPartial'
     }).
     when('/corpus', {
-      templateUrl: 'partials/corpusPartial',
-      controller: 'MyCtrl2'
+      templateUrl: 'partials/corpusPartial'
     }).
     otherwise({
       templateUrl: 'partials/acceuilPartial'

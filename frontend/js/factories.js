@@ -43,5 +43,17 @@ angular.module('myApp.factories', []).
 			}
 		}
 		return corpus;
+	}).
+	factory('corpusName',function(){
+		var corpusName = {
+			value: "",
+			setName: function(name){
+				corpusName.value = name;
+			},
+			getName: function(){
+				return corpusName.value;
+			}
+		}
+		return corpusName;
 	})
 ;

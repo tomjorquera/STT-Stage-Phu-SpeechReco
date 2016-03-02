@@ -15,7 +15,8 @@ var express = require('express'),
   socket = require('./backend/websocket'),
   kaldiCorpus = require('./backend/kaldicorpus'),
   sphinxCorpus = require('./backend/sphinx4corpus'),
-  corpus = require('./backend/getcorpus');
+  corpus = require('./backend/getcorpus'),
+  createCorpus = require('./backend/createCorpus');
 
 var app = module.exports = express();
 
@@ -66,10 +67,15 @@ app.get('/transcribecorpus/Kaldi/:corpusName', kaldiCorpus.transcribeCorpusKaldi
 app.get('/transcribecorpus/Sphinx-4/:corpusName', sphinxCorpus.transcribeCorpusSphinx);
 //convert audio
 app.get('/convert/:toolname/:inputtype/:clientname', convert.convertAudio);
-//send corpus list to client
+//create folder for corpus
 app.get('/getcorpus', corpus.getCorpus);
+//add content
+app.get('/addcontent/:corpusname', createCorpus.addContent);
+//create corpus
+app.get('/createcorpus/:corpusname', createCorpus.create);
 //upload file
 app.post('/upload/:datatype/:filename', upload.uploadFile);
+app.post('/uploadfiles/:type/:corpus', upload.uploadFiles);
 // redirect all others to the index (HTML5 history)
 app.get('*', routes.index);
 

@@ -1,0 +1,13 @@
+form(name='MyForm',ng-submit="submit(text)")
+	label Corpus Name : 
+	input.form-control(ng-model="text",name="text",ng-minlength="2",ng-maxlength="20",required) 
+	br
+	input.btn.btn-primary(type="submit",id="submit",value="Submit")
+	{{msg}}
+.btn.btn-default(ngf-select='uploadAudios($files)',ng-model='files',ngf-accept="'audio/*'",multiple="multiple") Select Audios
+br 
+br
+.btn.btn-default(ngf-select='uploadTexts($files)',ng-model='files',ngf-accept="'text/*'",multiple="multiple") Select Texts
+br 
+br
+.btn.btn-primary(ng-click="done()") Send files

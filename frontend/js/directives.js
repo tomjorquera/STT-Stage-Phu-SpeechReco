@@ -144,8 +144,6 @@ angular.module('myApp.directives', []).
 			          		$scope.messageVisible = true;
 			          		break;
 			        	default:
-			          		$scope.selectedTool ="Please tell us which toolkit that you would like to use";
-			          		$scope.messageVisible = true;
 			          		break;
 		    			};
 				};
@@ -634,6 +632,59 @@ angular.module('myApp.directives', []).
 			    		});
 			    	}
 				};
+			}
+		}
+	}).
+	directive('createCorpus',function(){
+		return {
+			restrict:'E',
+			templateUrl: 'partials/create-corpus',
+			controller: function($scope,$http,Upload,corpusName){
+				$scope.uploadAudios = function(files){
+					files.forEach(function(file){
+						Upload.upload({
+				            url: 'uploadfiles/audiofiles/'+corpusName.getName(),
+				            method: 'POST',
+				            file: file
+			        	});
+					})
+				}
+				$scope.uploadTexts = function(files){
+					console.log(files);
+					files.forEach(function(file){
+						Upload.upload({
+				            url: 'uploadfiles/textfiles/'+corpusName.getName(),
+				            method: 'POST',
+				            file: file
+			        	});
+					})
+				}
+				$scope.submit = function() {
+					corpusName.setName($scope.text);
+					console.log(corpusName.getName());	
+					$http({
+		      			method: 'GET',
+		      			url: '/createcorpus/'+corpusName.getName(),
+		    		}).
+            		success(function(data, status, headers, config) {
+            			$scope.msg = "Corpus created!!";
+            		}).
+            		error(function(data, status, headers, config) {
+            			$scope.msg = 'error create corpus';
+		    		});
+				}
+				$scope.done = function(){
+					$http({
+		      			method: 'GET',
+		      			url: '/addcontent/'+corpusName.getName(),
+		    		}).
+            		success(function(data, status, headers, config) {
+            			$scope.msg = "Corpus created!!";
+            		}).
+            		error(function(data, status, headers, config) {
+            			$scope.msg = 'error create corpus';
+		    		});
+				}
 			}
 		}
 	})
