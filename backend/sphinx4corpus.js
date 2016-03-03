@@ -8,6 +8,7 @@ exports.transcribeCorpusSphinx = function(req, res) {
 	var corpusFolder = __dirname+'/../corpus/'+corpus+'/';
 	var audioFilesFolder = __dirname+'/../corpus/'+corpus+'/wav-for-sphinx/';
 	var textFilesFolder = __dirname+'/../corpus/'+corpus+'/txt/';
+	var keywordsFolder = __dirname+'/../corpus/'+corpus+'/keywords/';
 	var txtName;
 	var audioName;
 	var lines = fs.readFileSync(corpusFolder+corpus+'.txt').toString().split('\n');
@@ -63,10 +64,12 @@ exports.transcribeCorpusSphinx = function(req, res) {
 			console.log('org: '+originalText);
 			var resultTable = result.split(' ');
 			var textTable = originalText.split(' ');
+			var keywords = getKeywords(keywordsFolder+txtName);
 	    	console.log('Sphinx-4 sends transcript of file '+audioName+'>>>>>');
 	    	listResult.push({
 	    		Text: textTable,
-	    		Result: resultTable
+	    		Result: resultTable,
+	    		Keywords: keywords
 	    	})
 	    	console.log('Sphinx-4 is done with '+audioName+'>>>>>');
 	    	if(i!==(lines.length-1)) analize(i+1);
@@ -99,57 +102,46 @@ function simplifize(listResult,i){
 			});
 			var wer = calculs.werCalcul(campareText(resultSimplifize, textSimplifize),textSimplifize);
 			var campare = campareText(resultSimplifize, textSimplifize);
-			var precisionRecall = calculs.precisionRecall(campare);
-			setTimeout(function(){
+			var precision, recall, fscore;
+			var keywords =[];
+			item.Keywords.forEach(function(keyword){
+				if (keyword!==''&&keyword!==' '){
+					keywords.push(keyword.toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"").replace(' ',''))
+				}
+			});
+			console.log(keywords);
+			//lemmatize keywords
+			lemmer.lemmatize(keywords, function(err, transformKeywords){
+				var precisionRecall = calculs.precisionRecall(resultSimplifize.split(' '), transformKeywords);
 				if (i !== (listResult.length-1)){
 					socket.emit('send msg',{
-						compareObject: campare,
 						WER: wer,
-						precision: precisionRecall.Precision,
-						recall: precisionRecall.Recall,
-						fScore: precisionRecall.FScore
+						precision: precisionRecall.precision,
+						recall: precisionRecall.recall,
+						fScore: precisionRecall.fscore
 					});
 					console.log('send result');
 					simplifize(listResult,i+1);
 				}
 				else {
 					socket.emit('send last msg',{
-						compareObject: campare,
 						WER: wer,
-						precision: precisionRecall.Precision,
-						recall: precisionRecall.Recall,
-						fScore: precisionRecall.FScore
+						precision: precisionRecall.precision,
+						recall: precisionRecall.recall,
+						fScore: precisionRecall.fscore
 					});
 					console.log('send result');
 				}
-			},1000);
+			});
 		});
 	});
 }
 
-
-//get the path of data necessary when it's an audio, recorded audio or text
-function getData(typeData, clientName){
+//get keywords
+function getKeywords (filePath){
 	var fs = require('fs-extra');
-	var filePath = 'error';
-	switch (typeData){
-		case "audio":
-			if (fs.existsSync(__dirname+'/../upload_audio/'+clientName+'.wav-convertedforsphinx.wav'))
-				filePath = __dirname+'/../upload_audio/'+clientName+'.wav-convertedforsphinx.wav';
-			break;
-		case "micro":
-			if (fs.existsSync(__dirname+'/../recorded_audio/'+clientName+'.wav-convertedforsphinx.wav'))
-				filePath = __dirname+'/../recorded_audio/'+clientName+'.wav-convertedforsphinx.wav';
-			break;
-		case "text":
-			if (fs.existsSync(__dirname+'/../upload_text/'+clientName+'.txt'))
-				filePath = __dirname+'/../upload_text/'+clientName+'.txt';
-			break;
-		default:
-			break;
-	};
-	return filePath;
-};
+	return fs.readFileSync(filePath).toString().split('\n');
+}
 
 //campare 2 strings and give to output the diff object that show the different btw 2 strings
 function campareText(cibleText, originalText){

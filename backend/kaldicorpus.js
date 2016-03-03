@@ -11,6 +11,7 @@ exports.transcribeCorpusKaldi = function(req, res) {
 	var corpusFolder = __dirname+'/../corpus/'+corpus+'/';
 	var audioFilesFolder = __dirname+'/../corpus/'+corpus+'/wav-for-kaldi/';
 	var textFilesFolder = __dirname+'/../corpus/'+corpus+'/txt/';
+	var keywordsFolder = __dirname+'/../corpus/'+corpus+'/keywords/';
 	var kaldiRoot = __dirname+'/lib/kaldi-trunk';
 	var txtName;
 	var audioName;
@@ -32,6 +33,7 @@ exports.transcribeCorpusKaldi = function(req, res) {
 		console.log('org: '+originalText);
 		var resultTable = result.split(' ');
 		var textTable = originalText.split(' ');
+		var keywords = getKeywords(keywordsFolder+txtName);
 		//send socket to client time by time
     	console.log('Kaldi send transcript of file '+audioName+'>>>>>');
     	//simplifize
@@ -46,27 +48,34 @@ exports.transcribeCorpusKaldi = function(req, res) {
 					textSimplifize+=word+' ';
 				});
 				var campare = campareText(resultSimplifize, textSimplifize);
-				var precisionRecall = calculs.precisionRecall(campare);
-				if (i !== (lines.length-1)){
-					socket.emit('send msg', {
-						compareObject: campare,
-						WER: calculs.werCalcul(campare,textSimplifize),	
-						precision: precisionRecall.Precision,
-						recall: precisionRecall.Recall,
-						fScore: precisionRecall.FScore	
-					});
-					console.log('Kaldi is done with '+audioName+'>>>>>');
-					analize(i+1);		
-				} else {
-					socket.emit('send last msg', {
-						compareObject: campare,
-						WER: calculs.werCalcul(campare,textSimplifize),
-						precision: precisionRecall.Precision,
-						recall: precisionRecall.Recall,
-						fScore: precisionRecall.FScore	
-					});
-					console.log('Kaldi is done with '+audioName+'>>>>>');
-				}
+				var keywordsSimplifize = [];
+				keywords.forEach(function(keyword){
+					if (keyword!==''&&keyword!==' '){
+						keywordsSimplifize.push(keyword.toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"").replace(' ',''))
+					}
+				})
+				//lemmatize keywords
+				lemmer.lemmatize(keywordsSimplifize, function(err, transformKeywords){
+					var precisionRecall = calculs.precisionRecall(resultSimplifize.split(' '), transformKeywords);
+					if (i !== (lines.length-1)){
+						socket.emit('send msg', {
+							WER: calculs.werCalcul(campare,textSimplifize),	
+							precision: precisionRecall.precision,
+							recall: precisionRecall.recall,
+							fScore: precisionRecall.fscore	
+						});
+						console.log('Kaldi is done with '+audioName+'>>>>>');
+						analize(i+1);		
+					} else {
+						socket.emit('send last msg', {
+							WER: calculs.werCalcul(campare,textSimplifize),
+							precision: precisionRecall.precision,
+							recall: precisionRecall.recall,
+							fScore: precisionRecall.fscore	
+						});
+						console.log('Kaldi is done with '+audioName+'>>>>>');
+					}
+				});
 			});
 		});	
     }
@@ -88,28 +97,11 @@ function transcribeByKaldi(kaldiPath,filePath,i,txtName,audioName,callback){
 	}); 
 };
 
-//get the path of data necessary when it's an audio, recorded audio or text
-function getData(typeData, clientName){
+//get keywords
+function getKeywords (filePath){
 	var fs = require('fs-extra');
-	var filePath = 'error';
-	switch (typeData){
-		case "audio":
-			if (fs.existsSync(__dirname+'/../upload_audio/'+clientName+'.wav-convertedforkaldi.wav'))
-				filePath = __dirname+'/../upload_audio/'+clientName+'.wav-convertedforkaldi.wav';
-			break;
-		case "micro":
-			if (fs.existsSync(__dirname+'/../recorded_audio/'+clientName+'.wav-convertedforkaldi.wav'))
-				filePath = __dirname+'/../recorded_audio/'+clientName+'.wav-convertedforkaldi.wav';
-			break;
-		case "text":
-			if (fs.existsSync(__dirname+'/../upload_text/'+clientName+'.txt'))
-				filePath = __dirname+'/../upload_text/'+clientName+'.txt';
-			break;
-		default:
-			break;
-	};
-	return filePath;
-};
+	return fs.readFileSync(filePath).toString().split('\n');
+}
 
 //campare 2 strings and give to output the diff object that show the different btw 2 strings
 function campareText(cibleText, originalText){

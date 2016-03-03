@@ -1,13 +1,30 @@
-form(name='MyForm',ng-submit="submit(text)")
-	label Corpus Name : 
-	input.form-control(ng-model="text",name="text",ng-minlength="2",ng-maxlength="20",required) 
+
+.btn.btn-info.pull-right(ng-click='makeCorpusGuide()') Make corpus
+br
+br
+.cadre(ng-show = 'guide')
+	form(name='MyForm',ng-submit="submit(text)")
+		label Corpus Name : 
+		input.form-control(ng-model="text",name="text",ng-minlength="2",ng-maxlength="20",required) 
+		br
+		.pull-left {{msg}}
+		input.btn.btn-primary.pull-right(type="submit",id="submit",value="Submit")\
 	br
-	input.btn.btn-primary(type="submit",id="submit",value="Submit")
-	{{msg}}
-.btn.btn-default(ngf-select='uploadAudios($files)',ng-model='files',ngf-accept="'audio/*'",multiple="multiple") Select Audios
-br 
-br
-.btn.btn-default(ngf-select='uploadTexts($files)',ng-model='files',ngf-accept="'text/*'",multiple="multiple") Select Texts
-br 
-br
-.btn.btn-primary(ng-click="done()") Send files
+	div
+		|Make sure audio's name and corresponding text's name would be the same
+	br
+	.btn.btn-warning.btn-sm(ngf-select='uploadAudios($files)',ng-model='files',ngf-accept="'audio/*'",multiple="multiple") Select Audios
+	&nbsp; &nbsp;
+	.btn.btn-warning.btn-sm(ngf-select='uploadTexts($files)',ng-model='files',ngf-accept="'text/*'",multiple="multiple") Select Texts 
+	&nbsp; &nbsp;
+	.btn.btn-warning.btn-sm(ngf-select='uploadKeywords($files)',ng-model='files',ngf-accept="'text/*'",multiple="multiple") Select Keywords File
+	br
+	{{uploadAudioMsg}}
+	br
+	{{uploadTextMsg}}
+	br
+	{{uploadKeywordsMsg}}
+	br
+	.pull-left {{doneMsg}}
+	.btn.btn-success.pull-right(ng-click="done()") Done
+	br

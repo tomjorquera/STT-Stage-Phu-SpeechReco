@@ -55,5 +55,24 @@ angular.module('myApp.factories', []).
 			}
 		}
 		return corpusName;
+	}).
+	factory('dataResult',function(){
+		return {	
+			data: {
+				wer: -1,
+				precision:-1,
+				recall:-1,
+				fscore:-1,
+			},
+			setValue: function(werValue,precisionValue,recallValue,fscoreValue){
+				this.data.wer = werValue;
+				this.data.precision = precisionValue;
+				this.data.recall = recallValue;
+				this.data.fscore = fscoreValue;
+			},
+			getValue: function(){
+				return this.data;
+			}
+		};
 	})
 ;

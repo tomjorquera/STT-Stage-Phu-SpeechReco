@@ -28,7 +28,7 @@ exports.convertAudio = function(req, res) {
                     console.log('convert ok');
                     fs.unlinkSync(audioFolder + '/' + audioName);
                     res.json({
-                        convertMsg: 'Convert ok!!',
+                        convertMsg: 'Audio was converted for Sphinx-4',
                     });
                 });
             break;
@@ -40,7 +40,7 @@ exports.convertAudio = function(req, res) {
                     console.log('convert ok');
                     fs.unlinkSync(audioFolder + '/' + audioName);
                     res.json({
-                        convertMsg:'Convert ok!!'
+                        convertMsg:'Audio was converted for Kaldi'
                     });
                 });
                 break;

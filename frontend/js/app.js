@@ -10,7 +10,8 @@ angular.module('myApp', [
   'myApp.factories',
   'myApp.directives',
   'ngFileUpload',
-  'btford.socket-io'
+  'btford.socket-io',
+  'chart.js'
 ]).
 config(function($routeProvider, $locationProvider) {
   $routeProvider.

@@ -79,6 +79,16 @@ exports.uploadFiles = function(req,res){
         res.end();
       });
     }
+    if (req.params.type === 'keywordsfiles'){
+      var fs = require('fs-extra');       //File System - for file manipulation
+      var fstream;
+      var dirUploadFolder = __dirname+'/../corpus/'+req.params.corpus+'/keywords/';
+      fstream = fs.createWriteStream(dirUploadFolder+filename);
+      file.pipe(fstream);
+      fstream.on('close', function () {          
+        res.end();
+      });
+    }
   });
 }
 

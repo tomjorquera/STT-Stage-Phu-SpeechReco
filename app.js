@@ -15,8 +15,7 @@ var express = require('express'),
   socket = require('./backend/websocket'),
   kaldiCorpus = require('./backend/kaldicorpus'),
   sphinxCorpus = require('./backend/sphinx4corpus'),
-  corpus = require('./backend/getcorpus'),
-  createCorpus = require('./backend/createCorpus');
+  gestionCorpus = require('./backend/gestionCorpus');
 
 var app = module.exports = express();
 
@@ -68,29 +67,18 @@ app.get('/transcribecorpus/Sphinx-4/:corpusName', sphinxCorpus.transcribeCorpusS
 //convert audio
 app.get('/convert/:toolname/:inputtype/:clientname', convert.convertAudio);
 //create folder for corpus
-app.get('/getcorpus', corpus.getCorpus);
+app.get('/getcorpus', gestionCorpus.getCorpus);
 //add content
-app.get('/addcontent/:corpusname', createCorpus.addContent);
+app.get('/addcontent/:corpusname', gestionCorpus.addContent);
 //create corpus
-app.get('/createcorpus/:corpusname', createCorpus.create);
+app.get('/createcorpus/:corpusname', gestionCorpus.create);
+//delete corpus
+app.get('/delcorpus/:corpusname',gestionCorpus.delCorpus);
 //upload file
 app.post('/upload/:datatype/:filename', upload.uploadFile);
 app.post('/uploadfiles/:type/:corpus', upload.uploadFiles);
 // redirect all others to the index (HTML5 history)
 app.get('*', routes.index);
-
-//convert corpus
-/*var exec = require('child_process').exec;
-var fs = require('fs-extra');
-fs.readdirSync(__dirname+'/corpus/list4/wav-for-kaldi/').forEach(function(audioName){
-  var cmd1 = 'cd '+__dirname+'/corpus/list4/wav-for-kaldi/';
-  var cmd2 = 'sox '+audioName+' -c 1 -r 8000 -b 16 '+audioName+'-convertedforkaldi.wav';
-  console.log(cmd1+' ; '+cmd2);
-  exec(cmd1+' ; '+cmd2, function(error, stdout, stderr) {
-      console.log('convert ok');
-  });
-})*/
-
 
 /**
  * Start Server

@@ -1,7 +1,7 @@
 'use strict';
 
 /* Directives */
-angular.module('myApp.directives', []).
+angular.module('myApp.directives', ['chart.js']).
 	directive('appName', function(appname) {
 		return function(scope, elm, attrs) {
 		  elm.text(appname);
@@ -172,9 +172,9 @@ angular.module('myApp.directives', []).
 					      display.innerHTML = "&bull; Compare text here : ";
 					      data.compareObject.forEach(function(part){
 					        // green for additions, red for deletions
-					        // white for common parts
+					        // black for common parts
 					        var color = part.added ? 'green' :
-					          part.removed ? 'red' : 'white';
+					          part.removed ? 'red' : 'black';
 					        var span = document.createElement('span');
 					        span.style.color = color;
 					        span.appendChild(document.createTextNode(part.value));
@@ -492,8 +492,19 @@ angular.module('myApp.directives', []).
 					$scope.selection.push(corpus);
 					choosedCorpus.setCorpusName(corpus);
 				};
-				$scope.makeCorpusGuide=function(){
-					$scope.guide = !($scope.guide);
+				//delete corpus
+				$scope.delCorpus = function(){
+					var corpusCible = $scope.selection.pop();
+					$http({
+	      				method: 'GET',
+	      				url: '/delcorpus/'+corpusCible
+		    		}).
+	        		success(function(data, status, headers, config) {
+						location.reload();
+	        		}).
+	        		error(function(data, status, headers, config) {
+		      			console.log('Error!');
+		    		});
 				}
 			}
 		}
@@ -502,7 +513,7 @@ angular.module('myApp.directives', []).
 		return {
 			restrict:'E',
 			templateUrl: 'partials/transcribe-corpus',
-			controller: function($scope,$http,toolSelectedFactory,choosedCorpus, mySocket){
+			controller: function($scope,$http,toolSelectedFactory,choosedCorpus, mySocket, dataResult){
 				$scope.showIcon = false;
 				$scope.errorMsg;
 				$scope.average;
@@ -517,69 +528,33 @@ angular.module('myApp.directives', []).
 				mySocket.on('send msg',function(data){	
 					console.log('recoie un message from server');
 					numAudio += 1;
-					$scope.transcribedText = data.transcribedText;	
-					if (data.compareObject !== ""){
-						result.appendChild(document.createTextNode("- "));	
-						data.compareObject.forEach(function(part){
-							// green for additions, red for deletions
-							// white for common parts
-							var color = part.added ? 'green' :
-							part.removed ? 'red' : 'white';
-							var span = document.createElement('span');
-							span.style.color = color;
-							span.appendChild(document.createTextNode(part.value));	
-							if (part.removed) span.appendChild(document.createTextNode(' '));	
-							result.appendChild(span);
-						});
-						var br = document.createElement("br");
-						var info = document.createTextNode(' -> WER: '+data.WER+'/Precision: '+data.precision+'/Recall: '+data.recall+'/F-Score: '+data.fScore);
-						result.appendChild(info);
-						result.appendChild(br);
-						var str =  werSum+'+'+data.WER+'=';
-						werSum += parseFloat(data.WER);
-						console.log(str+werSum);
-						console.log(numAudio);
-						precisionSum += parseFloat(data.precision);
-						recallSum += parseFloat(data.recall);
-						fScoreSum += parseFloat(data.fScore);	
-					}
+					$scope.transcribedText = data.transcribedText;
+					var br = document.createElement("br");
+					var info = document.createTextNode('Audio '+numAudio+' -> WER: '+data.WER+'/Precision: '+data.precision+'/Recall: '+data.recall+'/F-Score: '+data.fScore);
+					result.appendChild(info);
+					result.appendChild(br);
+					werSum += parseFloat(data.WER);
+					precisionSum += parseFloat(data.precision);
+					recallSum += parseFloat(data.recall);
+					fScoreSum += parseFloat(data.fScore);	
+					
 				});	
 				mySocket.on('send last msg', function(data){
 					console.log('recoie dernier message from server');
 					numAudio += 1;
-					$scope.transcribedText = data.transcribedText;	
-					if (data.compareObject !== ""){
-						result.appendChild(document.createTextNode("- "));	
-						data.compareObject.forEach(function(part){
-							// green for additions, red for deletions
-							// white for common parts
-							var color = part.added ? 'green' :
-							part.removed ? 'red' : 'white';
-							var span = document.createElement('span');
-							span.style.color = color;
-							span.appendChild(document.createTextNode(part.value));	
-							if (part.removed) span.appendChild(document.createTextNode(' '));
-							result.appendChild(span);
-						});
-						var br = document.createElement("br");
-						var info = document.createTextNode(' -> WER: '+data.WER+'/Precision: '+data.precision+'/Recall: '+data.recall+'/F-Score: '+data.fScore);
-						result.appendChild(info);
-						var str =  werSum+'+'+data.WER+'=';
-						werSum += parseFloat(data.WER);
-						console.log(str+werSum);
-						console.log(numAudio);
-						precisionSum += parseFloat(data.precision);
-						recallSum += parseFloat(data.recall);
-						fScoreSum += parseFloat(data.fScore);
-					}
+					$scope.transcribedText = data.transcribedText;
+					var info = document.createTextNode('Audio '+numAudio+' -> WER: '+data.WER+'/Precision: '+data.precision+'/Recall: '+data.recall+'/F-Score: '+data.fScore);
+					result.appendChild(info);
+					werSum += parseFloat(data.WER);
+					precisionSum += parseFloat(data.precision);
+					recallSum += parseFloat(data.recall);
+					fScoreSum += parseFloat(data.fScore);
+					//average
 					var averageWer = werSum/parseFloat(numAudio);
 					var averagePrecision = precisionSum/parseFloat(numAudio);
 					var averageRecall = recallSum/parseFloat(numAudio);
 					var averageFScore = fScoreSum/parseFloat(numAudio);
-					$scope.average = 'Average: WER: '+averageWer.toFixed(3)
-									+'/Precision: '+averagePrecision.toFixed(3)
-									+'/Recall: '+averageRecall.toFixed(3)
-									+'/F-Score: '+averageFScore.toFixed(3);
+					dataResult.setValue(averageWer.toFixed(3)*100,averagePrecision.toFixed(3)*100,averageRecall.toFixed(3)*100,averageFScore.toFixed(3)*100);
 					$scope.showIcon = false;
 					transcribeButton.removeAttribute("disabled");
 				});
@@ -640,6 +615,11 @@ angular.module('myApp.directives', []).
 			restrict:'E',
 			templateUrl: 'partials/create-corpus',
 			controller: function($scope,$http,Upload,corpusName){
+				//make corpus
+				$scope.makeCorpusGuide=function(){
+					$scope.guide = !($scope.guide);
+				}
+
 				$scope.uploadAudios = function(files){
 					files.forEach(function(file){
 						Upload.upload({
@@ -648,9 +628,9 @@ angular.module('myApp.directives', []).
 				            file: file
 			        	});
 					})
+					$scope.uploadAudioMsg = "Audios uploaded"
 				}
 				$scope.uploadTexts = function(files){
-					console.log(files);
 					files.forEach(function(file){
 						Upload.upload({
 				            url: 'uploadfiles/textfiles/'+corpusName.getName(),
@@ -658,6 +638,17 @@ angular.module('myApp.directives', []).
 				            file: file
 			        	});
 					})
+					$scope.uploadTextMsg = "Texts uploaded"
+				}
+				$scope.uploadKeywords = function(files){
+					files.forEach(function(file){
+						Upload.upload({
+				            url: 'uploadfiles/keywordsfiles/'+corpusName.getName(),
+				            method: 'POST',
+				            file: file
+			        	});
+					})
+					$scope.uploadKeywordsMsg = "Keywords uploaded";
 				}
 				$scope.submit = function() {
 					corpusName.setName($scope.text);
@@ -670,7 +661,7 @@ angular.module('myApp.directives', []).
             			$scope.msg = "Corpus created!!";
             		}).
             		error(function(data, status, headers, config) {
-            			$scope.msg = 'error create corpus';
+            			$scope.msg = 'Error create corpus. Maybe your name of corpus is used, choose another one';
 		    		});
 				}
 				$scope.done = function(){
@@ -679,11 +670,37 @@ angular.module('myApp.directives', []).
 		      			url: '/addcontent/'+corpusName.getName(),
 		    		}).
             		success(function(data, status, headers, config) {
-            			$scope.msg = "Corpus created!!";
+            			$scope.doneMsg = "Refresh page to see your corpus in the list above";
             		}).
             		error(function(data, status, headers, config) {
             			$scope.msg = 'error create corpus';
 		    		});
+				}
+			}
+		}
+	}).
+	directive('drawChart',function(){
+		return {
+			restrict:'E',
+			templateUrl: 'partials/draw-chart',
+			controller: function($scope, dataResult, toolSelectedFactory){
+				$scope.draw =function(){
+					var data = dataResult.getValue();
+					if (!isNaN(data.fscore)){
+						$scope.labels = ['WER', 'Precision', 'Recall', 'F-Score'];
+						$scope.series = [toolSelectedFactory.getSelectedTool()];
+						console.log(data);
+						$scope.data = [
+						    [data.wer.toFixed(1), data.precision.toFixed(1), data.recall.toFixed(1), data.fscore.toFixed(1)]
+						];
+					} else {
+						$scope.labels = ['WER', 'Precision', 'Recall'];
+						$scope.series = [toolSelectedFactory.getSelectedTool()];
+						console.log(data);
+						$scope.data = [
+						    [data.wer.toFixed(1), data.precision.toFixed(1), data.recall.toFixed(1)]
+						];
+					}
 				}
 			}
 		}
