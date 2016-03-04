@@ -33,16 +33,14 @@ body {
 
 #drop {
     position: relative;
-    top: 10px;
-    height: 30px;
-    border-radius: 2px;
-    line-height: 30px;
-    border: 2px black;
+    height: 70px;
+    border-radius: 5px;
+    padding-top: 25px; 
     text-align: center;
     font-size: 15px;
     font-family: sans-serif;
     color: black;
-    background-color:  #e67300;
+    background-color: #e67300;
 
 }
 
@@ -61,25 +59,24 @@ body {
     font-family: sans-serif;
 }
 
-blockquote{
-    position: relative;
-    padding: 30px;  
-    color: black;
-    text-align: left;
-    font-size: 15px;
-    font-family: sans-serif;
-    border-radius: 10px;
-    background-color: #FFCC66;   
-}
-
-.cadre{
+.cadre-type1{
     position: relative;
     padding: 30px;
     text-align: left;
     font-size: 15px;
     font-family: sans-serif;
-    border-radius: 10px;
-    background-color: #FFCCCC;
+    border-radius: 0px 10px 10px 10px;
+    background-color: #FFCC66;
+}
+
+.cadre-type2{
+    position: relative;
+    padding: 30px;
+    text-align: left;
+    font-size: 15px;
+    font-family: sans-serif;
+    border-radius: 10px 10px 10px 10px;
+    background-color: #FFCC66;
 }
 
 #align div{
@@ -104,3 +101,21 @@ blockquote{
     }
 }
 
+ul.nav li.active a, 
+ul.nav li.active a:hover,
+ul.nav li.active a:focus { 
+    color: black;
+    background-color: #FFCC66; 
+    border-radius: 10px 10px 0px 0px;
+}
+
+.nav li a{
+    color: #990033;
+}
+
+.nav li a:hover,
+.nav li a:focus {
+    color: #990033;
+    border-radius: 10px 10px 0px 0px;
+    background-color: #F8F8F8;
+}

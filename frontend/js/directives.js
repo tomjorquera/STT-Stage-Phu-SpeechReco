@@ -29,25 +29,32 @@ angular.module('myApp.directives', ['chart.js']).
 					this.className="";
 					this.innerHTML = "Drop your file here";
 					var uploadFile = e.dataTransfer.files[e.dataTransfer.files.length-1];
-					$scope.upload(uploadFile);					
+					$scope.uploadByDragging(uploadFile);					
 				}
 				//upload funtion uses the Upload object and upload methode of angular-file-upload
-				$scope.upload = function (file) {
-					$scope.uploadAudioStatus="";
-					$scope.uploadTextStatus="";
-					if (file.type === "audio/wav" && clientDistinct.getNameClient() === 'unknown'){
-			        	$scope.uploadAudioStatus=file.name+" was uploaded";
-			        	clientDistinct.setNameClient(getRandomString()+'.wav');
-			        }
-			        else if (file.type === "text/plain" && clientDistinct.getNameClient() === 'unknown'){
-			        	$scope.uploadTextStatus=file.name+" was uploaded";
-			        	clientDistinct.setNameClient(getRandomString()+'.txt');
+				$scope.uploadByDragging = function (file) {
+					console.log(clientDistinct.getNameClient());
+            		if (clientDistinct.getNameClient() === 'unknown'){
+            			clientDistinct.setNameClient(getRandomString());
             		}
-			        Upload.upload({
-			            url: 'upload/stream/'+clientDistinct.getNameClient(),
-			            method: 'POST',
-			            file: file
-			        });
+					if (file.type === "audio/wav"){
+			        	$scope.uploadAudioStatus=file.name+" was uploaded";
+			        	var filename = clientDistinct.getNameClient()+'.wav';
+			        	Upload.upload({
+				            url: 'upload/stream/'+filename,
+				            method: 'POST',
+				            file: file
+			        	});
+			        }
+			        else if (file.type === "text/plain"){
+			        	$scope.uploadTextStatus=file.name+" was uploaded";
+			        	var filename = clientDistinct.getNameClient()+'.txt';
+			        	Upload.upload({
+				            url: 'upload/stream/'+filename,
+				            method: 'POST',
+				            file: file
+			        	});
+            		}
 			    };
 			},
 		}
@@ -74,6 +81,7 @@ angular.module('myApp.directives', ['chart.js']).
 				var filename = "";
                 $scope.upload = function (file) {
                 	if(file !== null){
+                		console.log(clientDistinct.getNameClient());
                 		if (clientDistinct.getNameClient() === 'unknown'){
                 			clientDistinct.setNameClient(getRandomString());
                 		}
@@ -468,6 +476,7 @@ angular.module('myApp.directives', ['chart.js']).
 			templateUrl: 'partials/choose-corpus',
 			controller: function($scope,$http,choosedCorpus){
 				$scope.guide =false;
+				$scope.delMsg='';
 				$http({
 	      			method: 'GET',
 	      			url: '/getcorpus'
@@ -489,18 +498,33 @@ angular.module('myApp.directives', ['chart.js']).
 				};
 				//method to get selected corpus
 				$scope.chooseCorpusAction = function(corpus){
+					$scope.delMsg = '\''+corpus+'\' corpus was selected';
 					$scope.selection.push(corpus);
 					choosedCorpus.setCorpusName(corpus);
 				};
 				//delete corpus
 				$scope.delCorpus = function(){
+					$scope.delMsg='';
 					var corpusCible = $scope.selection.pop();
 					$http({
 	      				method: 'GET',
 	      				url: '/delcorpus/'+corpusCible
 		    		}).
 	        		success(function(data, status, headers, config) {
-						location.reload();
+	        			$scope.delMsg='\''+corpusCible+'\' was deleted';
+	        			$http({
+			      			method: 'GET',
+			      			url: '/getcorpus'
+			    		}).
+		        		success(function(data, status, headers, config) {
+							//list corpus
+							$scope.corpuses = data;
+							//selected corpus
+							$scope.selection = [];
+		        		}).
+		        		error(function(data, status, headers, config) {
+			      			console.log('Error!');
+		    			});
 	        		}).
 	        		error(function(data, status, headers, config) {
 		      			console.log('Error!');
@@ -528,9 +552,8 @@ angular.module('myApp.directives', ['chart.js']).
 				mySocket.on('send msg',function(data){	
 					console.log('recoie un message from server');
 					numAudio += 1;
-					$scope.transcribedText = data.transcribedText;
 					var br = document.createElement("br");
-					var info = document.createTextNode('Audio '+numAudio+' -> WER: '+data.WER+'/Precision: '+data.precision+'/Recall: '+data.recall+'/F-Score: '+data.fScore);
+					var info = document.createTextNode('Audio '+numAudio+' - WER: '+data.WER+', Precision: '+data.precision+', Recall: '+data.recall+', F-Score: '+data.fScore);
 					result.appendChild(info);
 					result.appendChild(br);
 					werSum += parseFloat(data.WER);
@@ -542,8 +565,7 @@ angular.module('myApp.directives', ['chart.js']).
 				mySocket.on('send last msg', function(data){
 					console.log('recoie dernier message from server');
 					numAudio += 1;
-					$scope.transcribedText = data.transcribedText;
-					var info = document.createTextNode('Audio '+numAudio+' -> WER: '+data.WER+'/Precision: '+data.precision+'/Recall: '+data.recall+'/F-Score: '+data.fScore);
+					var info = document.createTextNode('Audio '+numAudio+' - WER: '+data.WER+'/Precision: '+data.precision+'/Recall: '+data.recall+'/F-Score: '+data.fScore);
 					result.appendChild(info);
 					werSum += parseFloat(data.WER);
 					precisionSum += parseFloat(data.precision);
@@ -554,10 +576,20 @@ angular.module('myApp.directives', ['chart.js']).
 					var averagePrecision = precisionSum/parseFloat(numAudio);
 					var averageRecall = recallSum/parseFloat(numAudio);
 					var averageFScore = fScoreSum/parseFloat(numAudio);
-					dataResult.setValue(averageWer.toFixed(3)*100,averagePrecision.toFixed(3)*100,averageRecall.toFixed(3)*100,averageFScore.toFixed(3)*100);
+					dataResult.setValue(averageWer.toFixed(3)*100,
+										averagePrecision.toFixed(3)*100,
+										averageRecall.toFixed(3)*100,
+										averageFScore.toFixed(3)*100);
 					$scope.showIcon = false;
 					transcribeButton.removeAttribute("disabled");
 				});
+
+				mySocket.on('error', function(data){
+					$scope.showIcon = false;
+					transcribeButton.removeAttribute("disabled");
+					$scope.errorMsg = data.toString();
+				});
+
 				//function when click transcribe button
 				$scope.requestAction = function(){
 					werSum = 0;
@@ -566,6 +598,7 @@ angular.module('myApp.directives', ['chart.js']).
 					recallSum = 0;
 					fScoreSum = 0;
 					$scope.average ='';
+					dataResult.setValue(-1,-1,-1,-1);
 					//if the toolkit is sphinx-4, disconnect the socket
 					if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
 						mySocket.disconnect();
@@ -578,7 +611,7 @@ angular.module('myApp.directives', ['chart.js']).
 					if (choosedCorpus.getCorpusName() === "unknown"){
 						$scope.errorMsg="Have you choosen a corpus yet?";
 					}
-					else if (toolSelectedFactory.getSelectedTool() === ""){
+					else if (toolSelectedFactory.getSelectedTool() === "unknown"){
 						$scope.errorMsg="Have you choosen a tool yet?";
 					}
 					else {
@@ -615,10 +648,7 @@ angular.module('myApp.directives', ['chart.js']).
 			restrict:'E',
 			templateUrl: 'partials/create-corpus',
 			controller: function($scope,$http,Upload,corpusName){
-				//make corpus
-				$scope.makeCorpusGuide=function(){
-					$scope.guide = !($scope.guide);
-				}
+				$scope.next = false;
 
 				$scope.uploadAudios = function(files){
 					files.forEach(function(file){
@@ -628,6 +658,7 @@ angular.module('myApp.directives', ['chart.js']).
 				            file: file
 			        	});
 					})
+					console.log(corpusName.getName());
 					$scope.uploadAudioMsg = "Audios uploaded"
 				}
 				$scope.uploadTexts = function(files){
@@ -650,7 +681,13 @@ angular.module('myApp.directives', ['chart.js']).
 					})
 					$scope.uploadKeywordsMsg = "Keywords uploaded";
 				}
+				$scope.clearZone = function(){
+					$scope.next = false;
+					$scope.text = '';
+					$scope.msg = '';
+				}
 				$scope.submit = function() {
+					$scope.doneMsg = "";
 					corpusName.setName($scope.text);
 					console.log(corpusName.getName());	
 					$http({
@@ -658,10 +695,11 @@ angular.module('myApp.directives', ['chart.js']).
 		      			url: '/createcorpus/'+corpusName.getName(),
 		    		}).
             		success(function(data, status, headers, config) {
-            			$scope.msg = "Corpus created!!";
+            			$scope.msg = "Corpus name valid";
+            			$scope.next = true;
             		}).
             		error(function(data, status, headers, config) {
-            			$scope.msg = 'Error create corpus. Maybe your name of corpus is used, choose another one';
+            			$scope.msg = 'Error create corpus. Your corpus name is used. Choose another one';
 		    		});
 				}
 				$scope.done = function(){
@@ -670,10 +708,28 @@ angular.module('myApp.directives', ['chart.js']).
 		      			url: '/addcontent/'+corpusName.getName(),
 		    		}).
             		success(function(data, status, headers, config) {
-            			$scope.doneMsg = "Refresh page to see your corpus in the list above";
+            			$scope.doneMsg = "Creating corpus successfully";
+            			$scope.uploadAudioMsg = '';
+            			$scope.uploadTextMsg = '';
+            			$scope.uploadKeywordsMsg = '';
+            			$scope.msg = '';
+            			$scope.text = '';
+            			$http({
+			      			method: 'GET',
+			      			url: '/getcorpus'
+			    		}).
+		        		success(function(data, status, headers, config) {
+							//list corpus
+							$scope.corpuses = data;
+							//selected corpus
+							$scope.selection = [];
+		        		}).
+		        		error(function(data, status, headers, config) {
+			      			console.log('Error!');
+		    			});
             		}).
             		error(function(data, status, headers, config) {
-            			$scope.msg = 'error create corpus';
+            			$scope.msg = 'Error create corpus';
 		    		});
 				}
 			}
@@ -684,22 +740,31 @@ angular.module('myApp.directives', ['chart.js']).
 			restrict:'E',
 			templateUrl: 'partials/draw-chart',
 			controller: function($scope, dataResult, toolSelectedFactory){
+				$scope.showDiag = false;
+				$scope.msgDiag = "Transcribing a corpus before drawing its diagram"
 				$scope.draw =function(){
 					var data = dataResult.getValue();
-					if (!isNaN(data.fscore)){
-						$scope.labels = ['WER', 'Precision', 'Recall', 'F-Score'];
-						$scope.series = [toolSelectedFactory.getSelectedTool()];
-						console.log(data);
-						$scope.data = [
-						    [data.wer.toFixed(1), data.precision.toFixed(1), data.recall.toFixed(1), data.fscore.toFixed(1)]
-						];
-					} else {
-						$scope.labels = ['WER', 'Precision', 'Recall'];
-						$scope.series = [toolSelectedFactory.getSelectedTool()];
-						console.log(data);
-						$scope.data = [
-						    [data.wer.toFixed(1), data.precision.toFixed(1), data.recall.toFixed(1)]
-						];
+					if (data.wer === -1){
+						$scope.msgDiag = "Transcribing a corpus before drawing its diagram";
+						$scope.showDiag = false;
+					}else {
+						if (!isNaN(data.fscore)){
+							$scope.msgDiag = "";
+							$scope.showDiag = true;
+							$scope.labels = ['WER', 'Precision', 'Recall', 'F-Score'];
+							$scope.series = [toolSelectedFactory.getSelectedTool()];
+							$scope.data = [
+							    [data.wer.toFixed(1), data.precision.toFixed(1), data.recall.toFixed(1), data.fscore.toFixed(1)]
+							];
+						} else {
+							$scope.msgDiag = "";
+							$scope.showDiag = true;
+							$scope.labels = ['WER', 'Precision', 'Recall'];
+							$scope.series = [toolSelectedFactory.getSelectedTool()];
+							$scope.data = [
+							    [data.wer.toFixed(1), data.precision.toFixed(1), data.recall.toFixed(1)]
+							];
+						}
 					}
 				}
 			}

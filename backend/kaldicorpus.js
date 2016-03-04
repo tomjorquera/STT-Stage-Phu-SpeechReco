@@ -89,11 +89,14 @@ function transcribeByKaldi(kaldiPath,filePath,i,txtName,audioName,callback){
 	var cmd1 = 'cd '+kaldiPath+'/egs/online-nnet2/';
 	var cmd2 = './run.sh '+kaldiPath+' '+filePath;
 	exec(cmd1+' ; '+cmd2, function(error, stdout, stderr) {
+		var socket = require('./websocket.js').getSocket();
 		//console.log('fini '+audioName+' '+stdout);
 		if (stdout !== ""){
 			console.log('trans: '+stdout);
 			callback(i,stdout,audioName,txtName);
-		} else console.log('error');
+		} else {
+			socket.emit('error', "There is error in transcribing.\nMaybe your corpus is emty or some files are missing like an audio does not have corresponding text.\nRe-create another corpus...");
+		}
 	}); 
 };
 
