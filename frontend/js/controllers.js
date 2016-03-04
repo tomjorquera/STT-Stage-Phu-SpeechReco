@@ -25,5 +25,5 @@ angular.module('myApp.controllers', []).
     $scope.setTab = function(setTab) {
       $scope.tab = setTab;
     };
-  })
+  });
 

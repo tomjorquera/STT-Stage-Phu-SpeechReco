@@ -75,7 +75,7 @@ exports.transcribeCorpusSphinx = function(req, res) {
 	    	if(i!==(lines.length-1)) analize(i+1);
 	    	else {
 	    		res.send(202);
-	    		setTimeout(simplifize(listResult,0),1000);	
+	    		setTimeout(simplifize(listResult,0),2000);	
 	    	}
 		});
 	};

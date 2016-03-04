@@ -21,11 +21,24 @@ exports.transcribeKaldi = function(req, res) {
     res.send(202);
 
 	if (audioFile === 'error'){ //verify if audio data is ready 
-		socket.emit('send msg audio',{
-			transcribedText: "Audio input is missing. Upload or record your file first...",
-			compareObject: "",
-			originalTextExport: "",
-		});
+		switch (selectedInput){ 
+			case 'audio':
+				socket.emit('send msg audio',{
+					transcribedText: "Audio input is missing or is not converted. Upload or record your file first...",
+					compareObject: "",
+					originalTextExport: "",
+				});
+				break;
+			case 'micro':
+				socket.emit('send msg micro',{
+					transcribedText: "Audio input is missing or is not converted. Upload or record your file first...",
+					compareObject: "",
+					originalTextExport: "",
+				});
+				break;
+			default:
+				break;
+		};
 	} 
 	else {
 	    //treat the client request

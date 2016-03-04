@@ -11,9 +11,10 @@ angular.module('myApp', [
   'myApp.directives',
   'ngFileUpload',
   'btford.socket-io',
-  'chart.js'
+  'chart.js',
+  'ngMaterial'
 ]).
-config(function($routeProvider, $locationProvider) {
+config(function($routeProvider, $locationProvider, $mdThemingProvider) {
   $routeProvider.
     when('/audiofile', {
       templateUrl: 'partials/audioFilePartial'
@@ -27,6 +28,10 @@ config(function($routeProvider, $locationProvider) {
     otherwise({
       templateUrl: 'partials/acceuilPartial'
     });
-
   $locationProvider.html5Mode(true);
+  $mdThemingProvider.theme('default')
+    .primaryPalette('orange')
+    .accentPalette('orange')
+    .backgroundPalette('orange')
+    .warnPalette('red');
 });

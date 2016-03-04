@@ -18,11 +18,14 @@ exports.transcribeSphinx = function(req, res) {
 	console.log(audioFile);
 	if (audioFile === 'error'){ //verify if audio data is ready 
 		console.log('errorr');
-		res.json('send msg',{
-			transcribedText: "Audio input is missing or you did not convert it yet...",
-			compareObject: "",
-			originalTextExport: "",
-		});
+		res.send(202);
+	    setTimeout(function(){
+			socket.emit('send msg audio',{
+				transcribedText: "Audio input is missing or is not converted. Upload or record your file first...",
+				compareObject: "",
+				originalTextExport: "",
+			});
+		},1000);
 	}
 	else {
 		//execute the transcribe function to get transcribed text in result variable

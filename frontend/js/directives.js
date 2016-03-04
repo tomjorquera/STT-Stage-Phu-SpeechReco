@@ -33,6 +33,7 @@ angular.module('myApp.directives', ['chart.js']).
 				}
 				//upload funtion uses the Upload object and upload methode of angular-file-upload
 				$scope.uploadByDragging = function (file) {
+					$scope.convertMsg='';
 					console.log(clientDistinct.getNameClient());
             		if (clientDistinct.getNameClient() === 'unknown'){
             			clientDistinct.setNameClient(getRandomString());
@@ -80,6 +81,7 @@ angular.module('myApp.directives', ['chart.js']).
 				$scope.uploadTextStatus="";
 				var filename = "";
                 $scope.upload = function (file) {
+                	$scope.convertMsg='';
                 	if(file !== null){
                 		console.log(clientDistinct.getNameClient());
                 		if (clientDistinct.getNameClient() === 'unknown'){
@@ -215,7 +217,7 @@ angular.module('myApp.directives', ['chart.js']).
 					if (toolSelectedFactory.getSelectedTool()==='unknown') {
 						$scope.errorMessage = "Choose a toolkit before!";
 						return 0;
-					};
+					}; 
 					//if the toolkit is kaldi, create a socket to server
 					if (toolSelectedFactory.getSelectedTool() === "Kaldi"){
 						mySocket.connect('http://localhost:8080/',{'forceNew':true });
@@ -225,10 +227,7 @@ angular.module('myApp.directives', ['chart.js']).
 						mySocket.disconnect();
 						console.log('socket disconnected');
 					}
-					//reset all upload file status, convert status, error message
-					$scope.uploadAudioStatus="";
-					$scope.uploadTextStatus="";
-					$scope.convertMsg="";
+					//reset error message
 					$scope.errorMessage ="";
 					//disable the transcribe button to make sure client can not click it twice
 					transcribeButton.setAttribute("disabled", true);
@@ -292,9 +291,7 @@ angular.module('myApp.directives', ['chart.js']).
 					if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
 						mySocket.disconnect();
 					}
-					$scope.convertMsg='';
 					$scope.errorMessage="";
-
 					//disable the transcribe button to make sure client can not click it twice
 					transcribeButton.setAttribute("disabled", true);
 
