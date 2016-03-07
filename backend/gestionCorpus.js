@@ -41,6 +41,37 @@ exports.addContent = function(req,res){
 		}
 	});
 	res.end();
+	/*process.nextTick(function(){
+		if(verifieContent(corpusName)){
+			res.json({
+				dataReady: true
+			});
+		}
+		else {
+			deleteFolderRecursive(__dirname+'/../corpus/'+corpusName+'/');
+			res.json({
+				dataReady: false
+			});
+		}
+	});*/
+}
+
+//verifie if all required contents exist
+function verifieContent(corpusName){
+	var  fs = require('fs-extra');
+	var result = true;
+	var corpusDir = __dirname+'/../corpus/'+corpusName+'/';
+	var txtDir = corpusDir+'txt/';
+	var kwDir = corpusDir+'keywords/';
+	var lines = fs.readFileSync(corpusDir+corpusName+'.txt').toString().split('\n');
+	lines.forEach(function(line){
+		var files = line.toString().split(' ');
+    	var txtName = files[1];
+    	if (!fs.exists(txtDir+txtName) || !fs.exists(kwDir+txtName)){
+    		result = false;
+    	} 
+	})
+	return result;
 }
 
 exports.delCorpus = function(req, res){

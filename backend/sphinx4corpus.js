@@ -75,7 +75,7 @@ exports.transcribeCorpusSphinx = function(req, res) {
 	    	if(i!==(lines.length-1)) analize(i+1);
 	    	else {
 	    		res.send(202);
-	    		setTimeout(simplifize(listResult,0),2000);	
+	    		simplifize(listResult,0);	
 	    	}
 		});
 	};
@@ -114,14 +114,27 @@ function simplifize(listResult,i){
 			lemmer.lemmatize(keywords, function(err, transformKeywords){
 				var precisionRecall = calculs.precisionRecall(resultSimplifize.split(' '), transformKeywords);
 				if (i !== (listResult.length-1)){
-					socket.emit('send msg',{
-						WER: wer,
-						precision: precisionRecall.precision,
-						recall: precisionRecall.recall,
-						fScore: precisionRecall.fscore
-					});
-					console.log('send result');
-					simplifize(listResult,i+1);
+					if (i===0){
+						setTimeout(function(){
+							socket.emit('send msg',{
+								WER: wer,
+								precision: precisionRecall.precision,
+								recall: precisionRecall.recall,
+								fScore: precisionRecall.fscore
+							});
+							console.log('send result');
+							simplifize(listResult,i+1);
+						},2000);
+					} else{
+						socket.emit('send msg',{
+							WER: wer,
+							precision: precisionRecall.precision,
+							recall: precisionRecall.recall,
+							fScore: precisionRecall.fscore
+						});
+						console.log('send result');
+						simplifize(listResult,i+1);
+					}
 				}
 				else {
 					socket.emit('send last msg',{

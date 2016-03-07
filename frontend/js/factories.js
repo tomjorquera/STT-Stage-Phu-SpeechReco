@@ -1,13 +1,19 @@
 angular.module('myApp.factories', []).
 	factory('toolSelectedFactory', function(){
 		var selectedTool =  {
-			tool:"unknown",
+			tool: [],
 			getSelectedTool: function(){
 				return selectedTool.tool;
 			},
 			setSelectedTool: function(toolName){
-				selectedTool.tool = toolName;
+				(selectedTool.tool).push(toolName);
 			},
+			rmSelectedTool: function(toolName){
+				(selectedTool.tool).splice((selectedTool.tool).indexOf(toolName),1);
+			},
+			clearList: function(){
+				selectedTool.tool = [];
+			}
 		};
 		return selectedTool;
 	}).
@@ -58,21 +64,46 @@ angular.module('myApp.factories', []).
 	}).
 	factory('dataResult',function(){
 		return {	
-			data: {
-				wer: -1,
-				precision:-1,
-				recall:-1,
-				fscore:-1,
-			},
+			data: [{value:[-1,-1,-1,-1], stat: false},{value:[-1,-1,-1,-1], stat: false}],
 			setValue: function(werValue,precisionValue,recallValue,fscoreValue){
-				this.data.wer = werValue;
-				this.data.precision = precisionValue;
-				this.data.recall = recallValue;
-				this.data.fscore = fscoreValue;
+				if(!this.data[0].stat){
+					this.data[0].value[0] = werValue;
+					this.data[0].value[1] = precisionValue;
+					this.data[0].value[2] = recallValue;
+					this.data[0].value[3] = fscoreValue;
+					this.data[0].stat = true;
+				} else{
+					this.data[1].value[0] = werValue;
+					this.data[1].value[1] = precisionValue;
+					this.data[1].value[2] = recallValue;
+					this.data[1].value[3] = fscoreValue;
+					this.data[1].stat = true;
+				}
+				
 			},
 			getValue: function(){
 				return this.data;
+			},
+			clear: function(){
+				this.data = [{value:[-1,-1,-1,-1], stat: false},{value:[-1,-1,-1,-1], stat: false}];
 			}
 		};
+	}).
+	factory('seriesDraw',function(){
+		return{
+			series: [],
+			getSeries: function(){
+				return this.series;
+			},
+			setSeries: function(toolName){
+				(this.series).push(toolName);
+			},
+			rmSeries: function(toolName){
+				(this.series).splice((this.series).indexOf(toolName),1);
+			},
+			clearList: function(){
+				this.series = [];
+			}
+		}
 	})
 ;

@@ -126,36 +126,41 @@ angular.module('myApp.directives', ['chart.js']).
 		return {
 			restrict: 'EA',
 			templateUrl: 'partials/choose-tool',
-			controller: function($scope, toolSelectedFactory){
-				$scope.chooseValue = 0;
-    			$scope.chooseTools = [{value:1,name:"Sphinx-4"},{value:2,name:"Kaldi"},{value:3,name:"pocketSphinx"}];
-    			//update choosen tool after choosing
-    			$scope.setValue = function(value){
-      				$scope.chooseValue = value;
-    			};
+			controller: function($scope, toolSelectedFactory, dataResult, seriesDraw){
+				var inputType = location.href.substr(location.href.lastIndexOf('/'));
+				console.log(inputType);
+    			$scope.tools = ["Sphinx-4","Kaldi"];
+    			$scope.selectionTool = toolSelectedFactory.getSelectedTool();
     			//update the tool variable and the link variable in toolSelectedFactory. 
     			//The transcribe directive will use the link variable to send request to server
     			$scope.setTool = function(tool){
-	      			toolSelectedFactory.setSelectedTool(tool);
-				};
-				//message show to user after choosing the tool
-				$scope.showMessage = function(){
-					switch ($scope.chooseValue) {
-			        	case 1 :
-			          		$scope.message = "Sphinx-4 toolkit was selected"
-			          		$scope.messageVisible = true;
-			          		break;
-			        	case 2 :
-			          		$scope.message = "Kaldi toolkit was selected"
-			          		$scope.messageVisible = true;
-			          		break;
-			          	case 3 :
-			          		$scope.message = "pocketSphinx toolkit was selected"
-			          		$scope.messageVisible = true;
-			          		break;
-			        	default:
-			          		break;
-		    			};
+    				switch (inputType) {
+    					case "/corpus":
+    						if (toolSelectedFactory.getSelectedTool().length === 0){
+    							dataResult.clear();
+    						}
+	    					if (toolSelectedFactory.getSelectedTool().indexOf(tool) > -1){
+		    					toolSelectedFactory.rmSelectedTool(tool);
+		    					seriesDraw.rmSeries(tool);
+		    					$scope.selectionTool = toolSelectedFactory.getSelectedTool();
+		    					console.log($scope.selectionTool);
+		    				}
+			      			else {
+			      				toolSelectedFactory.setSelectedTool(tool);
+			      				seriesDraw.setSeries(tool);
+			      				$scope.selectionTool = toolSelectedFactory.getSelectedTool();
+			      				console.log($scope.selectionTool);
+			      			}
+			      			break;
+			      		case "/audiofile":
+			      			toolSelectedFactory.clearList();
+			      			toolSelectedFactory.setSelectedTool(tool);
+		      				$scope.selectionTool = toolSelectedFactory.getSelectedTool();
+		      				console.log($scope.selectionTool);
+		      				break;
+		      			default:
+		      				break;
+    				};
 				};
 			}
 		}
@@ -213,17 +218,18 @@ angular.module('myApp.directives', ['chart.js']).
 
 				//function executes when clicking transcribe button
 				$scope.transcribeRequest =function (){
+					var tool = toolSelectedFactory.getSelectedTool()[0];
 					//if tool is not choosen, just give the error msg and end
-					if (toolSelectedFactory.getSelectedTool()==='unknown') {
+					if (toolSelectedFactory.getSelectedTool()===[]) {
 						$scope.errorMessage = "Choose a toolkit before!";
 						return 0;
 					}; 
 					//if the toolkit is kaldi, create a socket to server
-					if (toolSelectedFactory.getSelectedTool() === "Kaldi"){
+					if (tool === "Kaldi"){
 						mySocket.connect('http://localhost:8080/',{'forceNew':true });
 					}
 					//if the toolkit is sphinx-4, disconnect the socket
-					if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
+					if (tool === "Sphinx-4"){
 						mySocket.disconnect();
 						console.log('socket disconnected');
 					}
@@ -240,11 +246,11 @@ angular.module('myApp.directives', ['chart.js']).
 					//send request to server
 					$http({
 				      method: 'GET',
-				      url: '/transcribe/'+toolSelectedFactory.getSelectedTool()+'/audio/'+clientDistinct.getNameClient()
+				      url: '/transcribe/'+tool+'/audio/'+clientDistinct.getNameClient()
 				    }).
 				    success(function(data, status, headers, config) {
 				      console.log('requete accepte');
-				      if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
+				      if (tool === "Sphinx-4"){
 				      	mySocket.connect('http://localhost:8080/',{'forceNew':true });
 				      }
 				    }).
@@ -262,6 +268,7 @@ angular.module('myApp.directives', ['chart.js']).
 			restrict: 'E',
 			templateUrl: 'partials/transcribe-micro',
 			controller: function($scope, $http, toolSelectedFactory, mySocket, clientDistinct){
+				var tool = toolSelectedFactory.getSelectedTool()[0];
 				//scope.isShow decide show or hide the loading icon and the transcribe text part
 				//isShow = false => transcribe text part is showed and loading icon is hided
 				$scope.isShow = false;
@@ -279,16 +286,16 @@ angular.module('myApp.directives', ['chart.js']).
 				//function executes when clicking transcribe button
 				$scope.transcribeRequest =function (){
 					//if tool is not choosen, just give the error msg and end
-					if (toolSelectedFactory.getSelectedTool()==='unknown') {
+					if (toolSelectedFactory.getSelectedTool()===[]) {
 						$scope.errorMessage = "Choose a toolkit before!";
 						return 0;
 					};
 					//if the toolkit is kaldi, create a socket to server
-					if (toolSelectedFactory.getSelectedTool() === "Kaldi"){
+					if (tool === "Kaldi"){
 						mySocket.connect('http://localhost:8080/',{'forceNew':true });
 					}
 					//if the toolkit is sphinx-4, disconnect the socket
-					if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
+					if (tool === "Sphinx-4"){
 						mySocket.disconnect();
 					}
 					$scope.errorMessage="";
@@ -301,18 +308,17 @@ angular.module('myApp.directives', ['chart.js']).
 					//sent request
 					$http({
 				      method: 'GET',
-				      url: '/transcribe/'+toolSelectedFactory.getSelectedTool()+'/micro/'+clientDistinct.getNameClient()
+				      url: '/transcribe/'+tool+'/micro/'+clientDistinct.getNameClient()
 				    }).
 				    success(function(data, status, headers, config) {
-						//take result when it's sent by res.json (sphinx4 case)
-				      	if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
+				      	if (tool === "Sphinx-4"){
 					      	mySocket.connect('http://localhost:8080/',{'forceNew':true });
 					    }
 				    }).
 				    error(function(data, status, headers, config) {
-				      $scope.transcribedText = 'Error!';
-				      $scope.isShow = false;
-				      transcribeButton.removeAttribute("disabled");
+				      	$scope.transcribedText = 'Error!';
+				      	$scope.isShow = false;
+				      	transcribeButton.removeAttribute("disabled");
 				    });
 				}
 			}
@@ -595,48 +601,91 @@ angular.module('myApp.directives', ['chart.js']).
 					recallSum = 0;
 					fScoreSum = 0;
 					$scope.average ='';
-					dataResult.setValue(-1,-1,-1,-1);
-					//if the toolkit is sphinx-4, disconnect the socket
-					if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
+					switch ((toolSelectedFactory.getSelectedTool()).length){
+					 	case 0:
+					 		$scope.errorMsg="Have you choosen a tool yet?";
+					 		break;
+					 	case 1:
+					 		var tool = toolSelectedFactory.getSelectedTool()[0];
+					 		//if the toolkit is sphinx-4, disconnect the socket
+							gestionSocket(tool);
+							//verify if error cases
+							if (choosedCorpus.getCorpusName() === "unknown"){
+								$scope.errorMsg="Have you choosen a corpus yet?";
+							}
+							else {
+								//disable the transcribe button to make sure client can not click it twice
+								transcribeButton.setAttribute("disabled", true);				
+								$scope.errorMsg="";
+								$scope.showIcon = true;
+								result.innerHTML="";
+								$http({
+					      			method: 'GET',
+					      			url: '/transcribecorpus/'+tool+'/'+choosedCorpus.getCorpusName(),
+					    		}).
+			            		success(function(data, status, headers, config) {
+			            			//request sent
+			            			console.log('transcribe corpus request sent');
+			            			//affichage de result
+			            			if (tool === "Sphinx-4"){
+			            				mySocket.connect('http://localhost:8080/',{'forceNew':true });
+				            		}
+
+			            		}).
+			            		error(function(data, status, headers, config) {
+			            			$scope.showIcon = false;
+			            			transcribeButton.removeAttribute("disabled");
+			            			console.log('transcribe corpus request error');
+					    		});
+					    	}
+					    	toolSelectedFactory.rmSelectedTool(tool);
+					    	break;
+					    case 2:
+					    	var tool = toolSelectedFactory.getSelectedTool()[0];
+					 		//if the toolkit is sphinx-4, disconnect the socket
+							gestionSocket(tool);
+							//verify if error cases
+							if (choosedCorpus.getCorpusName() === "unknown"){
+								$scope.errorMsg="Have you choosen a corpus yet?";
+							}
+							else {
+								//disable the transcribe button to make sure client can not click it twice
+								transcribeButton.setAttribute("disabled", true);				
+								$scope.errorMsg="";
+								$scope.showIcon = true;
+								result.innerHTML="";
+								$http({
+					      			method: 'GET',
+					      			url: '/transcribecorpus/'+tool+'/'+choosedCorpus.getCorpusName(),
+					    		}).
+			            		success(function(data, status, headers, config) {
+			            			//request sent
+			            			console.log('transcribe corpus request sent');
+			            			//affichage de result
+			            			mySocket.connect('http://localhost:8080/',{'forceNew':true });
+			            		}).
+			            		error(function(data, status, headers, config) {
+			            			$scope.showIcon = false;
+			            			transcribeButton.removeAttribute("disabled");
+			            			console.log('transcribe corpus request error');
+					    		});
+					    	}
+					    	toolSelectedFactory.rmSelectedTool(tool);
+					    	$scope.errorMsg = "If you wanted to campaire 2 toolkits, click transcribing once more";
+					    	break;
+					    default:
+					    	break;
+					};
+				};
+				function gestionSocket(tool){
+					if (tool === "Sphinx-4"){
 						mySocket.disconnect();
 					}
 					//if the toolkit is kal, connect the socket
-					if (toolSelectedFactory.getSelectedTool() === "Kaldi"){
+					else if (tool === "Kaldi"){
 						mySocket.connect('http://localhost:8080/',{'forceNew':true });
 					}
-					//verify if error cases
-					if (choosedCorpus.getCorpusName() === "unknown"){
-						$scope.errorMsg="Have you choosen a corpus yet?";
-					}
-					else if (toolSelectedFactory.getSelectedTool() === "unknown"){
-						$scope.errorMsg="Have you choosen a tool yet?";
-					}
-					else {
-						//disable the transcribe button to make sure client can not click it twice
-						transcribeButton.setAttribute("disabled", true);				
-						$scope.errorMsg="";
-						$scope.showIcon = true;
-						result.innerHTML="";
-						$http({
-			      			method: 'GET',
-			      			url: '/transcribecorpus/'+toolSelectedFactory.getSelectedTool()+'/'+choosedCorpus.getCorpusName(),
-			    		}).
-	            		success(function(data, status, headers, config) {
-	            			//request sent
-	            			console.log('transcribe corpus request sent');
-	            			//affichage de result
-	            			if (toolSelectedFactory.getSelectedTool() === "Sphinx-4"){
-	            				mySocket.connect('http://localhost:8080/',{'forceNew':true });
-		            		}
-
-	            		}).
-	            		error(function(data, status, headers, config) {
-	            			$scope.showIcon = false;
-	            			transcribeButton.removeAttribute("disabled");
-	            			console.log('transcribe corpus request error');
-			    		});
-			    	}
-				};
+				}
 			}
 		}
 	}).
@@ -736,32 +785,44 @@ angular.module('myApp.directives', ['chart.js']).
 		return {
 			restrict:'E',
 			templateUrl: 'partials/draw-chart',
-			controller: function($scope, dataResult, toolSelectedFactory){
+			controller: function($scope, dataResult, toolSelectedFactory,seriesDraw){
 				$scope.showDiag = false;
-				$scope.msgDiag = "Transcribing a corpus before drawing its diagram"
+				$scope.msgDiag = "Transcribing a corpus before drawing its diagram";
+				$scope.series = seriesDraw.getSeries();
 				$scope.draw =function(){
 					var data = dataResult.getValue();
-					if (data.wer === -1){
-						$scope.msgDiag = "Transcribing a corpus before drawing its diagram";
-						$scope.showDiag = false;
-					}else {
-						if (!isNaN(data.fscore)){
+					if($scope.series.length === 1){
+						if (!data[0].stat){
+							$scope.msgDiag = "Transcribing a corpus before drawing its diagram";
+							$scope.showDiag = false;
+						}else if($scope.series.length === 1){
+							var values = data[0].value;
 							$scope.msgDiag = "";
 							$scope.showDiag = true;
 							$scope.labels = ['WER', 'Precision', 'Recall', 'F-Score'];
-							$scope.series = [toolSelectedFactory.getSelectedTool()];
 							$scope.data = [
-							    [data.wer.toFixed(1), data.precision.toFixed(1), data.recall.toFixed(1), data.fscore.toFixed(1)]
+							    [values[0].toFixed(1), values[1].toFixed(1), values[2].toFixed(1), values[3].toFixed(1)]
 							];
-						} else {
+						} 
+					} else if($scope.series.length === 2){
+						if (data[0].stat && data[1].stat){
+							var values1 = data[0].value;
+							var values2 = data[1].value;
 							$scope.msgDiag = "";
+							console.log($scope.series);
 							$scope.showDiag = true;
-							$scope.labels = ['WER', 'Precision', 'Recall'];
-							$scope.series = [toolSelectedFactory.getSelectedTool()];
+							$scope.series = ["Sphinx-4","Kaldi"];
+							$scope.labels = ['WER', 'Precision', 'Recall', 'F-Score'];
 							$scope.data = [
-							    [data.wer.toFixed(1), data.precision.toFixed(1), data.recall.toFixed(1)]
+							    [values1[0].toFixed(1), values1[1].toFixed(1), values1[2].toFixed(1), values1[3].toFixed(1)],
+							    [values2[0].toFixed(1), values2[1].toFixed(1), values2[2].toFixed(1), values2[3].toFixed(1)]
 							];
 						}
+						else{
+							$scope.msgDiag = "Transcribing a corpus before drawing its diagram";
+							console.log($scope.series);
+							$scope.showDiag = false;
+						} 
 					}
 				}
 			}

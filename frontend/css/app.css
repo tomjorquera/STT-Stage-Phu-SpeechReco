@@ -15,12 +15,11 @@ code {
 .main {
     background-color: #fff7e6;
 }
-.container{
-    height: 100%;
-    width: 90%;
-    padding-bottom: 70px;
-    position: relative;
 
+.container.bis{
+    width: 100%;
+    padding: 70px 80px 60px 80px;
+    position: relative;
 }
 
 .container .text-muted {
@@ -122,7 +121,7 @@ ul.nav li.active a:focus {
 .nav li a:focus {
     color: #990033;
     border-radius: 10px 10px 0px 0px;
-    background-color: #F8F8F8;
+    background-color: #FFCC99;
 }
 
 .md-toolbar-tools{
