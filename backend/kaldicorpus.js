@@ -28,7 +28,7 @@ exports.transcribeCorpusKaldi = function(req, res) {
     	transcribeByKaldi(kaldiRoot,audioFilesFolder+audioName,i,txtName,audioName,callback);
 	};	
 
-	function callback(i, result,audioName,txtName){
+	function callback(i,result,audioName,txtName,time){
 		var originalText = fs.readFileSync(textFilesFolder+txtName,"UTF-8").toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
 		console.log('org: '+originalText);
 		var resultTable = result.split(' ');
@@ -59,19 +59,17 @@ exports.transcribeCorpusKaldi = function(req, res) {
 					var precisionRecall = calculs.precisionRecall(resultSimplifize.split(' '), transformKeywords);
 					if (i !== (lines.length-1)){
 						socket.emit('send msg', {
-							WER: calculs.werCalcul(campare,textSimplifize),	
-							precision: precisionRecall.precision,
+							WER: calculs.werCalcul(campare,textSimplifize),
 							recall: precisionRecall.recall,
-							fScore: precisionRecall.fscore	
+							timeExec: time
 						});
 						console.log('Kaldi is done with '+audioName+'>>>>>');
 						analize(i+1);		
 					} else {
 						socket.emit('send last msg', {
 							WER: calculs.werCalcul(campare,textSimplifize),
-							precision: precisionRecall.precision,
 							recall: precisionRecall.recall,
-							fScore: precisionRecall.fscore	
+							timeExec: time
 						});
 						console.log('Kaldi is done with '+audioName+'>>>>>');
 					}
@@ -88,12 +86,16 @@ function transcribeByKaldi(kaldiPath,filePath,i,txtName,audioName,callback){
 	var exec = require('child_process').exec;
 	var cmd1 = 'cd '+kaldiPath+'/egs/online-nnet2/';
 	var cmd2 = './run.sh '+kaldiPath+' '+filePath;
+	var start = new Date().getTime();
 	exec(cmd1+' ; '+cmd2, function(error, stdout, stderr) {
 		var socket = require('./websocket.js').getSocket();
 		//console.log('fini '+audioName+' '+stdout);
 		if (stdout !== ""){
+			var end = new Date().getTime();
+			var timeExec = (end - start)/(1000*60);
+			console.log('time: '+timeExec)
 			console.log('trans: '+stdout);
-			callback(i,stdout,audioName,txtName);
+			callback(i,stdout,audioName,txtName,timeExec);
 		} else {
 			socket.emit('error', "There is error in transcribing.\nMaybe your corpus is emty or some files are missing like an audio does not have corresponding text.\nRe-create another corpus...");
 		}

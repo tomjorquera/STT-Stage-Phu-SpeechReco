@@ -11,76 +11,64 @@ exports.transcribeCorpusSphinx = function(req, res) {
 	var keywordsFolder = __dirname+'/../corpus/'+corpus+'/keywords/';
 	var txtName;
 	var audioName;
+	var listAudio = [];
+	var listText =[];
+	var listKw =[];
 	var lines = fs.readFileSync(corpusFolder+corpus+'.txt').toString().split('\n');
 	var listResult = [];
-	var wersSum = 0;
-	var precisionSum = 0;
-	var recallSum = 0;
-	var fScoreSum = 0;
-	var numAudio = 0;
+	var time = 0;
 
-	var java = require('java');
-
+	analize();
 	/*java.classpath.push(__dirname+"/../target/sphinx-4-lib-1.0-SNAPSHOT-jar-with-dependencies.jar");
 	var Configuration = java.import("edu.cmu.sphinx.api.Configuration");
 	var configuration = new Configuration();
 	configuration.setAcousticModelPathSync("resource:/edu/cmu/sphinx/models/en-us/en-us");
 	configuration.setDictionaryPathSync("resource:/edu/cmu/sphinx/models/en-us/cmudict-en-us.dict");
 	configuration.setLanguageModelPathSync("resource:/edu/cmu/sphinx/models/en-us/en-us.lm.bin");*/
-	function analize(i){
-	    var files = lines[i].toString().split(' ');
-    	txtName = files[1];
-    	audioName = files[0];
-    	console.log('Sphinx-4 transcribes file '+audioName+'>>>>>');
-		transcribeBySphinx(audioName,txtName,i);
+	function analize(){	    
+	    lines.forEach(function(line){
+	    	var files = line.toString().split(' ');
+	    	txtName = files[1];
+    		audioName = files[0];
+    		listAudio.push(audioFilesFolder+audioName);
+    		listText.push(textFilesFolder+txtName);
+    		listKw.push(keywordsFolder+txtName);
+	    });
+	    transcribeBySphinx(listAudio, listText, listKw);
 	};	
 
     //transcribe by sphinx function that give the transcribed text in outpout
-	function transcribeBySphinx(audioName,txtName,i,num){
-		if (num === undefined){
-			java.classpath.push(__dirname+'/lib/speechtotext.jar');
-			var S2T = java.import('AppTestSpeechReco');
-			var appSpeech = new S2T();
-			var result = appSpeech.transcribeSync(audioFilesFolder+audioName).replace(/\n/g," ");
-		}
-		else{
-			//Configuration			var FileInputStream = java.import("java.io.FileInputStream");
-			var SpeechResult = java.import("edu.cmu.sphinx.api.SpeechResult");
-			var Recognizer = java.import("edu.cmu.sphinx.api.StreamSpeechRecognizer");
-			
-			var recognizer = new Recognizer(configuration);
-			var fileInputStream = new FileInputStream(audioFilesFolder+audioName);
-			recognizer.startRecognitionSync(fileInputStream);
-			var resultE;
-			while ((resultE = recognizer.getResultSync()) !== null) {
-				result= result + resultE.getHypothesisSync() + ' ';
-				console.log('result: '+resultE.getHypothesisSync());
-			}
-			recognizer.stopRecognitionSync();
-		}
-		console.log('trans:'+result);
+	function transcribeBySphinx(listAudio,listText,listKw){
+		var java = require('java');
+		java.classpath.push(__dirname+'/lib/speechtotext.jar');
+		var S2T = java.import('AppTestSpeechReco');
+		var appSpeech = new S2T();
+		var start = new Date().getTime();
+		var results = appSpeech.transcribeSync(listAudio);
+		console.log(results);
 		process.nextTick(function(){
-			var originalText = fs.readFileSync(textFilesFolder+txtName,"UTF-8").toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
-			console.log('org: '+originalText);
-			var resultTable = result.split(' ');
-			var textTable = originalText.split(' ');
-			var keywords = getKeywords(keywordsFolder+txtName);
-	    	console.log('Sphinx-4 sends transcript of file '+audioName+'>>>>>');
-	    	listResult.push({
-	    		Text: textTable,
-	    		Result: resultTable,
-	    		Keywords: keywords
-	    	})
-	    	console.log('Sphinx-4 is done with '+audioName+'>>>>>');
-	    	if(i!==(lines.length-1)) analize(i+1);
-	    	else {
-	    		res.send(202);
-	    		simplifize(listResult,0);	
-	    	}
+			var end = new Date().getTime();
+			var timeExec = (end - start)/(1000*60);
+			console.log(timeExec);
+			for(var i=0;i<listAudio.length;i++){
+				var originalText = fs.readFileSync(listText[i],"UTF-8").toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+				console.log('org: '+originalText);
+				var resultTable = results[i].split(' ');
+				var textTable = originalText.split(' ');
+				var keywords = getKeywords(listKw[i]);
+		    	listResult.push({
+		    		Text: textTable,
+		    		Result: resultTable,
+		    		Keywords: keywords,
+		    		Time: timeExec
+			    })
+		    	if (i === (listAudio.length-1)) {
+		    		res.send(202);
+		    		simplifize(listResult,0);	
+		    	}
+			}
 		});
-	};
-
-	analize(0);  
+	}; 
 };
 function simplifize(listResult,i){
 	var socket = require('./websocket.js').getSocket();
@@ -89,6 +77,8 @@ function simplifize(listResult,i){
 	var item = listResult[i];
 	var resultTable = item.Result;
 	var textTable = item.Text;
+	var time = item.Time;
+	console.log('time: '+item.Time);
 	//simplifize
 	lemmer.lemmatize(resultTable, function(err, transformResult){
 		var resultSimplifize='';
@@ -102,7 +92,6 @@ function simplifize(listResult,i){
 			});
 			var wer = calculs.werCalcul(campareText(resultSimplifize, textSimplifize),textSimplifize);
 			var campare = campareText(resultSimplifize, textSimplifize);
-			var precision, recall, fscore;
 			var keywords =[];
 			item.Keywords.forEach(function(keyword){
 				if (keyword!==''&&keyword!==' '){
@@ -118,9 +107,9 @@ function simplifize(listResult,i){
 						setTimeout(function(){
 							socket.emit('send msg',{
 								WER: wer,
-								precision: precisionRecall.precision,
 								recall: precisionRecall.recall,
-								fScore: precisionRecall.fscore
+								timeExec: time
+
 							});
 							console.log('send result');
 							simplifize(listResult,i+1);
@@ -128,9 +117,8 @@ function simplifize(listResult,i){
 					} else{
 						socket.emit('send msg',{
 							WER: wer,
-							precision: precisionRecall.precision,
 							recall: precisionRecall.recall,
-							fScore: precisionRecall.fscore
+							timeExec: time
 						});
 						console.log('send result');
 						simplifize(listResult,i+1);
@@ -139,9 +127,8 @@ function simplifize(listResult,i){
 				else {
 					socket.emit('send last msg',{
 						WER: wer,
-						precision: precisionRecall.precision,
 						recall: precisionRecall.recall,
-						fScore: precisionRecall.fscore
+						timeExec: time
 					});
 					console.log('send result');
 				}

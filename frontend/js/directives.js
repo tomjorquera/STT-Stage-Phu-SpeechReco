@@ -138,18 +138,20 @@ angular.module('myApp.directives', ['chart.js']).
     					case "/corpus":
     						if (toolSelectedFactory.getSelectedTool().length === 0){
     							dataResult.clear();
+    							seriesDraw.clearList();
+    							console.log(seriesDraw.getSeries());
     						}
 	    					if (toolSelectedFactory.getSelectedTool().indexOf(tool) > -1){
 		    					toolSelectedFactory.rmSelectedTool(tool);
 		    					seriesDraw.rmSeries(tool);
+		    					console.log(seriesDraw.getSeries());
 		    					$scope.selectionTool = toolSelectedFactory.getSelectedTool();
-		    					console.log($scope.selectionTool);
 		    				}
 			      			else {
 			      				toolSelectedFactory.setSelectedTool(tool);
 			      				seriesDraw.setSeries(tool);
+			      				console.log(seriesDraw.getSeries());
 			      				$scope.selectionTool = toolSelectedFactory.getSelectedTool();
-			      				console.log($scope.selectionTool);
 			      			}
 			      			break;
 			      		case "/audiofile":
@@ -548,41 +550,35 @@ angular.module('myApp.directives', ['chart.js']).
 				var result = document.getElementById('res');
 				var werSum;
 				var numAudio;
-				var precisionSum;
 				var recallSum;
-				var fScoreSum;
+				var timeSum;
 				//take result if it's sent by socket (for kaldi case)
 				mySocket.on('send msg',function(data){	
 					console.log('recoie un message from server');
 					numAudio += 1;
 					var br = document.createElement("br");
-					var info = document.createTextNode('Audio '+numAudio+' - WER: '+data.WER+', Precision: '+data.precision+', Recall: '+data.recall+', F-Score: '+data.fScore);
+					var info = document.createTextNode('Audio '+numAudio+' - WER: '+data.WER+', Recall: '+data.recall);
 					result.appendChild(info);
 					result.appendChild(br);
 					werSum += parseFloat(data.WER);
-					precisionSum += parseFloat(data.precision);
-					recallSum += parseFloat(data.recall);
-					fScoreSum += parseFloat(data.fScore);	
+					recallSum += parseFloat(data.recall);	
+					timeSum += parseFloat(data.timeExec);
 					
 				});	
 				mySocket.on('send last msg', function(data){
 					console.log('recoie dernier message from server');
 					numAudio += 1;
-					var info = document.createTextNode('Audio '+numAudio+' - WER: '+data.WER+'/Precision: '+data.precision+'/Recall: '+data.recall+'/F-Score: '+data.fScore);
+					var info = document.createTextNode('Audio '+numAudio+' - WER: '+data.WER+', Recall: '+data.recall);
 					result.appendChild(info);
 					werSum += parseFloat(data.WER);
-					precisionSum += parseFloat(data.precision);
 					recallSum += parseFloat(data.recall);
-					fScoreSum += parseFloat(data.fScore);
+					timeSum += parseFloat(data.timeExec);
+					console.log(timeSum);
 					//average
 					var averageWer = werSum/parseFloat(numAudio);
-					var averagePrecision = precisionSum/parseFloat(numAudio);
 					var averageRecall = recallSum/parseFloat(numAudio);
-					var averageFScore = fScoreSum/parseFloat(numAudio);
 					dataResult.setValue(averageWer.toFixed(3)*100,
-										averagePrecision.toFixed(3)*100,
-										averageRecall.toFixed(3)*100,
-										averageFScore.toFixed(3)*100);
+										averageRecall.toFixed(3)*100,timeSum.toFixed(1));
 					$scope.showIcon = false;
 					transcribeButton.removeAttribute("disabled");
 				});
@@ -597,10 +593,8 @@ angular.module('myApp.directives', ['chart.js']).
 				$scope.requestAction = function(){
 					werSum = 0;
 					numAudio = 0;
-					precisionSum = 0;
 					recallSum = 0;
-					fScoreSum = 0;
-					$scope.average ='';
+					timeSum = 0;
 					switch ((toolSelectedFactory.getSelectedTool()).length){
 					 	case 0:
 					 		$scope.errorMsg="Have you choosen a tool yet?";
@@ -785,12 +779,17 @@ angular.module('myApp.directives', ['chart.js']).
 		return {
 			restrict:'E',
 			templateUrl: 'partials/draw-chart',
-			controller: function($scope, dataResult, toolSelectedFactory,seriesDraw){
+			controller: function($scope,dataResult,toolSelectedFactory,seriesDraw){
 				$scope.showDiag = false;
 				$scope.msgDiag = "Transcribing a corpus before drawing its diagram";
-				$scope.series = seriesDraw.getSeries();
+				$scope.labels = ['WER', 'Recall'];
+				$scope.labelsTime = ['Time Exec'];
 				$scope.draw =function(){
+					if ($scope.series !== seriesDraw.getSeries())
+						$scope.series = seriesDraw.getSeries();
+					console.log($scope.series);
 					var data = dataResult.getValue();
+					console.log(data);
 					if($scope.series.length === 1){
 						if (!data[0].stat){
 							$scope.msgDiag = "Transcribing a corpus before drawing its diagram";
@@ -799,28 +798,25 @@ angular.module('myApp.directives', ['chart.js']).
 							var values = data[0].value;
 							$scope.msgDiag = "";
 							$scope.showDiag = true;
-							$scope.labels = ['WER', 'Precision', 'Recall', 'F-Score'];
 							$scope.data = [
-							    [values[0].toFixed(1), values[1].toFixed(1), values[2].toFixed(1), values[3].toFixed(1)]
+							    [values[0].toFixed(1), values[1].toFixed(1)]
 							];
+							$scope.dataTime = [[values[2]]]
 						} 
 					} else if($scope.series.length === 2){
 						if (data[0].stat && data[1].stat){
 							var values1 = data[0].value;
 							var values2 = data[1].value;
 							$scope.msgDiag = "";
-							console.log($scope.series);
 							$scope.showDiag = true;
-							$scope.series = ["Sphinx-4","Kaldi"];
-							$scope.labels = ['WER', 'Precision', 'Recall', 'F-Score'];
 							$scope.data = [
-							    [values1[0].toFixed(1), values1[1].toFixed(1), values1[2].toFixed(1), values1[3].toFixed(1)],
-							    [values2[0].toFixed(1), values2[1].toFixed(1), values2[2].toFixed(1), values2[3].toFixed(1)]
+							    [values1[0].toFixed(1), values1[1].toFixed(1)],
+							    [values2[0].toFixed(1), values2[1].toFixed(1)]
 							];
+							$scope.dataTime = [[values1[2]],[values2[2]]]
 						}
 						else{
 							$scope.msgDiag = "Transcribing a corpus before drawing its diagram";
-							console.log($scope.series);
 							$scope.showDiag = false;
 						} 
 					}

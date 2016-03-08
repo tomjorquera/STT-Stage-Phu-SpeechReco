@@ -64,19 +64,17 @@ angular.module('myApp.factories', []).
 	}).
 	factory('dataResult',function(){
 		return {	
-			data: [{value:[-1,-1,-1,-1], stat: false},{value:[-1,-1,-1,-1], stat: false}],
-			setValue: function(werValue,precisionValue,recallValue,fscoreValue){
+			data: [{value:[-1,-1,-1], stat: false},{value:[-1,-1,-1], stat: false}],
+			setValue: function(werValue,recallValue,timeValue){
 				if(!this.data[0].stat){
 					this.data[0].value[0] = werValue;
-					this.data[0].value[1] = precisionValue;
-					this.data[0].value[2] = recallValue;
-					this.data[0].value[3] = fscoreValue;
+					this.data[0].value[1] = recallValue;
+					this.data[0].value[2] = timeValue;
 					this.data[0].stat = true;
 				} else{
 					this.data[1].value[0] = werValue;
-					this.data[1].value[1] = precisionValue;
-					this.data[1].value[2] = recallValue;
-					this.data[1].value[3] = fscoreValue;
+					this.data[1].value[1] = recallValue;
+					this.data[1].value[2] = timeValue;
 					this.data[1].stat = true;
 				}
 				
@@ -85,7 +83,7 @@ angular.module('myApp.factories', []).
 				return this.data;
 			},
 			clear: function(){
-				this.data = [{value:[-1,-1,-1,-1], stat: false},{value:[-1,-1,-1,-1], stat: false}];
+				this.data = [{value:[-1,-1,-1], stat: false},{value:[-1,-1,-1], stat: false}];
 			}
 		};
 	}).

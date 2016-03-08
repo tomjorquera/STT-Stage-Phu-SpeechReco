@@ -74,15 +74,13 @@ exports.precisionRecall = function(result,keywords){
 	console.log('tp = '+truePositives);
 	console.log('kwl = '+keywords.length+' '+keywords);
 	console.log('rsltl = '+resultLength+' '+result);
-	//pre = tp/tp+fp = tp/keywordsLength
-	var precision = truePositives/keywords.length;
-	//recall = tp/(tp+fn) = tp/resultLength
-	var recall = truePositives/resultLength;
+	//recall = tp/tp+fp = tp/keywordsLength
+	var recall = truePositives/keywords.length;
+	//prec = tp/(tp+fn) = tp/kw dans result
+	//var prec = truePositives/resultLength;
 	//F1-score
-	var fScore = (2*precision*recall)/(precision+recall);
+	//var fScore = (2*precision*recall)/(precision+recall);
 	return {
-		precision: precision.toFixed(3),
-		recall: recall.toFixed(3),
-		fscore: fScore.toFixed(3)
+		recall: recall.toFixed(3)
 	}
 }
