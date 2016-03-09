@@ -47,6 +47,7 @@ exports.transcribeCorpusSphinx = function(req, res) {
 		var results = appSpeech.transcribeSync(listAudio);
 		console.log(results);
 		process.nextTick(function(){
+			res.send(202);
 			var end = new Date().getTime();
 			var timeExec = (end - start)/(1000*60);
 			console.log(timeExec);
@@ -63,7 +64,6 @@ exports.transcribeCorpusSphinx = function(req, res) {
 		    		Time: timeExec
 			    })
 		    	if (i === (listAudio.length-1)) {
-		    		res.send(202);
 		    		simplifize(listResult,0);	
 		    	}
 			}
@@ -108,12 +108,12 @@ function simplifize(listResult,i){
 							socket.emit('send msg',{
 								WER: wer,
 								recall: precisionRecall.recall,
-								timeExec: time
+								timeExec: 0
 
 							});
 							console.log('send result');
 							simplifize(listResult,i+1);
-						},2000);
+						},1000);
 					} else{
 						socket.emit('send msg',{
 							WER: wer,
@@ -125,12 +125,14 @@ function simplifize(listResult,i){
 					}
 				}
 				else {
-					socket.emit('send last msg',{
-						WER: wer,
-						recall: precisionRecall.recall,
-						timeExec: time
-					});
-					console.log('send result');
+					setTimeout(function(){
+						socket.emit('send last msg',{
+							WER: wer,
+							recall: precisionRecall.recall,
+							timeExec: time
+						});
+						console.log('send result');
+					},1000);
 				}
 			});
 		});

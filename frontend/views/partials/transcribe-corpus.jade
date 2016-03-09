@@ -1,5 +1,5 @@
 br
-.btn.btn-success#transcribe-button(ng-click='requestAction();',disabled=false) Transcribe This Corpus
+.btn.btn-success#transcribe-button(ng-click='requestAction(); clearRes();',disabled=false) Transcribe This Corpus
 &nbsp; &nbsp;
 .glyphicon.glyphicon-refresh.glyphicon-refresh-animate(ng-show='showIcon')
 &nbsp; &nbsp;
@@ -10,7 +10,7 @@ br
 div(ng-controller='tabController')
 	ul.nav.nav-pills.nav-sm
 		li(ng-class='{active:isSet(1)}')
-			a(ng-click="setTab(1); draw()") Diagram
+			a(ng-click="setTab(1); draw();") Diagram
 		li(ng-class='{active:isSet(2)}') 
 			a(ng-click="setTab(2)") Results
 	div.cadre-type1(ng-show='isSet(1)')

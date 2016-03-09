@@ -139,18 +139,15 @@ angular.module('myApp.directives', ['chart.js']).
     						if (toolSelectedFactory.getSelectedTool().length === 0){
     							dataResult.clear();
     							seriesDraw.clearList();
-    							console.log(seriesDraw.getSeries());
     						}
 	    					if (toolSelectedFactory.getSelectedTool().indexOf(tool) > -1){
 		    					toolSelectedFactory.rmSelectedTool(tool);
 		    					seriesDraw.rmSeries(tool);
-		    					console.log(seriesDraw.getSeries());
 		    					$scope.selectionTool = toolSelectedFactory.getSelectedTool();
 		    				}
 			      			else {
 			      				toolSelectedFactory.setSelectedTool(tool);
 			      				seriesDraw.setSeries(tool);
-			      				console.log(seriesDraw.getSeries());
 			      				$scope.selectionTool = toolSelectedFactory.getSelectedTool();
 			      			}
 			      			break;
@@ -158,7 +155,6 @@ angular.module('myApp.directives', ['chart.js']).
 			      			toolSelectedFactory.clearList();
 			      			toolSelectedFactory.setSelectedTool(tool);
 		      				$scope.selectionTool = toolSelectedFactory.getSelectedTool();
-		      				console.log($scope.selectionTool);
 		      				break;
 		      			default:
 		      				break;
@@ -557,7 +553,7 @@ angular.module('myApp.directives', ['chart.js']).
 					console.log('recoie un message from server');
 					numAudio += 1;
 					var br = document.createElement("br");
-					var info = document.createTextNode('Audio '+numAudio+' - WER: '+data.WER+', Recall: '+data.recall);
+					var info = document.createTextNode(toolSelectedFactory.getSelectedTool()[0]+' - Audio '+numAudio+' - WER: '+data.WER+', Recall: '+data.recall);
 					result.appendChild(info);
 					result.appendChild(br);
 					werSum += parseFloat(data.WER);
@@ -568,7 +564,8 @@ angular.module('myApp.directives', ['chart.js']).
 				mySocket.on('send last msg', function(data){
 					console.log('recoie dernier message from server');
 					numAudio += 1;
-					var info = document.createTextNode('Audio '+numAudio+' - WER: '+data.WER+', Recall: '+data.recall);
+					var info = document.createTextNode(toolSelectedFactory.getSelectedTool()[0]+' - Audio '+numAudio+' - WER: '+data.WER+', Recall: '+data.recall);
+					var br = document.createElement("br");
 					result.appendChild(info);
 					werSum += parseFloat(data.WER);
 					recallSum += parseFloat(data.recall);
@@ -580,7 +577,13 @@ angular.module('myApp.directives', ['chart.js']).
 					dataResult.setValue(averageWer.toFixed(3)*100,
 										averageRecall.toFixed(3)*100,timeSum.toFixed(1));
 					$scope.showIcon = false;
-					transcribeButton.removeAttribute("disabled");
+					toolSelectedFactory.rmSelectedTool(toolSelectedFactory.getSelectedTool()[0]);
+					if (toolSelectedFactory.getSelectedTool().length !== 0){
+						result.appendChild(br);
+						$scope.requestAction();
+					} else {
+						transcribeButton.removeAttribute("disabled");
+					}
 				});
 
 				mySocket.on('error', function(data){
@@ -588,7 +591,11 @@ angular.module('myApp.directives', ['chart.js']).
 					transcribeButton.removeAttribute("disabled");
 					$scope.errorMsg = data.toString();
 				});
-
+				//clear res
+				$scope.clearRes=function(){
+					document.getElementById('res').innerHTML="";
+				}
+				
 				//function when click transcribe button
 				$scope.requestAction = function(){
 					werSum = 0;
@@ -612,7 +619,6 @@ angular.module('myApp.directives', ['chart.js']).
 								transcribeButton.setAttribute("disabled", true);				
 								$scope.errorMsg="";
 								$scope.showIcon = true;
-								result.innerHTML="";
 								$http({
 					      			method: 'GET',
 					      			url: '/transcribecorpus/'+tool+'/'+choosedCorpus.getCorpusName(),
@@ -624,7 +630,6 @@ angular.module('myApp.directives', ['chart.js']).
 			            			if (tool === "Sphinx-4"){
 			            				mySocket.connect('http://localhost:8080/',{'forceNew':true });
 				            		}
-
 			            		}).
 			            		error(function(data, status, headers, config) {
 			            			$scope.showIcon = false;
@@ -632,7 +637,6 @@ angular.module('myApp.directives', ['chart.js']).
 			            			console.log('transcribe corpus request error');
 					    		});
 					    	}
-					    	toolSelectedFactory.rmSelectedTool(tool);
 					    	break;
 					    case 2:
 					    	var tool = toolSelectedFactory.getSelectedTool()[0];
@@ -647,7 +651,6 @@ angular.module('myApp.directives', ['chart.js']).
 								transcribeButton.setAttribute("disabled", true);				
 								$scope.errorMsg="";
 								$scope.showIcon = true;
-								result.innerHTML="";
 								$http({
 					      			method: 'GET',
 					      			url: '/transcribecorpus/'+tool+'/'+choosedCorpus.getCorpusName(),
@@ -664,8 +667,6 @@ angular.module('myApp.directives', ['chart.js']).
 			            			console.log('transcribe corpus request error');
 					    		});
 					    	}
-					    	toolSelectedFactory.rmSelectedTool(tool);
-					    	$scope.errorMsg = "If you wanted to campaire 2 toolkits, click transcribing once more";
 					    	break;
 					    default:
 					    	break;
@@ -784,12 +785,42 @@ angular.module('myApp.directives', ['chart.js']).
 				$scope.msgDiag = "Transcribing a corpus before drawing its diagram";
 				$scope.labels = ['WER', 'Recall'];
 				$scope.labelsTime = ['Time Exec'];
+				$scope.colors = 
+					[{ // blue
+						fillColor: '#006699',
+						strokeColor: '#006699',
+						pointColor: '#006699',
+						pointStrokeColor: '#fff',
+						pointHighlightFill: '#fff',
+						pointHighlightStroke: '#006699'
+					},
+					{ // Red
+						fillColor: '#CC3333',
+						strokeColor: '#CC3333',
+						pointColor: '#CC3333',
+						pointStrokeColor: '#fff',
+						pointHighlightFill: '#fff',
+						pointHighlightStroke: '#CC3333'
+					}];
+
+				var chartInstances = [];
+				$scope.$on("create", function (event, chart) {
+				  	if (chartInstances.length < 2) {
+				  		chartInstances.push(chart);
+				  		console.log(chart);
+				  	} else {
+				  		chartInstances.forEach(function(chartInstance){
+				  			chartInstance.destroy();
+				  		});
+				  		chartInstances =[];
+				  		chartInstances.push(chart);
+				  	}
+				});
+
 				$scope.draw =function(){
 					if ($scope.series !== seriesDraw.getSeries())
 						$scope.series = seriesDraw.getSeries();
-					console.log($scope.series);
 					var data = dataResult.getValue();
-					console.log(data);
 					if($scope.series.length === 1){
 						if (!data[0].stat){
 							$scope.msgDiag = "Transcribing a corpus before drawing its diagram";
@@ -798,7 +829,7 @@ angular.module('myApp.directives', ['chart.js']).
 							var values = data[0].value;
 							$scope.msgDiag = "";
 							$scope.showDiag = true;
-							$scope.data = [
+							$scope.dataWR = [
 							    [values[0].toFixed(1), values[1].toFixed(1)]
 							];
 							$scope.dataTime = [[values[2]]]
@@ -809,7 +840,7 @@ angular.module('myApp.directives', ['chart.js']).
 							var values2 = data[1].value;
 							$scope.msgDiag = "";
 							$scope.showDiag = true;
-							$scope.data = [
+							$scope.dataWR = [
 							    [values1[0].toFixed(1), values1[1].toFixed(1)],
 							    [values2[0].toFixed(1), values2[1].toFixed(1)]
 							];
@@ -820,7 +851,7 @@ angular.module('myApp.directives', ['chart.js']).
 							$scope.showDiag = false;
 						} 
 					}
-				}
+				}			
 			}
 		}
 	})
