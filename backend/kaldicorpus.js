@@ -19,9 +19,10 @@ exports.transcribeCorpusKaldi = function(req, res) {
 	var utt = __dirname+'/lib/kaldi-trunk/egs/online-nnet2/utt.txt';
 	var audio_utt = __dirname+'/lib/kaldi-trunk/egs/online-nnet2/audio_utt.txt';
 	res.send(202);
-
+	//clear input
 	clearTxt(utt);
 	clearTxt(audio_utt);
+	//begin transcribing
 	createInput(0);
 
 	//create liste audio input of kaldi
