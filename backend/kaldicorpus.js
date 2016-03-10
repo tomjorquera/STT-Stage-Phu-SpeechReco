@@ -16,26 +16,82 @@ exports.transcribeCorpusKaldi = function(req, res) {
 	var txtName;
 	var audioName;
 	var lines = fs.readFileSync(corpusFolder+corpus+'.txt').toString().split('\n');
+	var utt = __dirname+'/lib/kaldi-trunk/egs/online-nnet2/utt.txt';
+	var audio_utt = __dirname+'/lib/kaldi-trunk/egs/online-nnet2/audio_utt.txt';
 	res.send(202);
 
-	analize(0);
+	clearTxt(utt);
+	clearTxt(audio_utt);
+	createInput(0);
 
-	function analize(i){
+	//create liste audio input of kaldi
+	function createInput(i){
 	    var files = lines[i].toString().split(' ');
-    	txtName = files[1];
     	audioName = files[0];
-    	console.log('Kaldi transcribes file '+audioName+'>>>>>');
-    	transcribeByKaldi(kaldiRoot,audioFilesFolder+audioName,i,txtName,audioName,callback);
+    	if(i===0){
+    		if (i===(lines.length-1)){
+    			fs.appendFile(utt,'spk ', function (){
+	    			fs.appendFile(utt, audioName+' ', function (){
+		    			fs.appendFile(audio_utt,audioName+' '+audioFilesFolder+audioName+'\n', function (){
+		    				transcribeByKaldi(sendResults);
+		    			});
+	    			});
+	    		});
+    		}
+    		else
+	    		fs.appendFile(utt,'spk ', function (){
+	    			fs.appendFile(utt, audioName+' ', function (){
+		    			fs.appendFile(audio_utt,audioName+' '+audioFilesFolder+audioName+'\n', function (){
+		    				createInput(i+1)
+		    			});
+	    			});
+	    		});
+    	}else if (i===(lines.length-1)){
+    		fs.appendFile(utt, audioName+' ', function (){
+    			fs.appendFile(audio_utt,audioName+' '+audioFilesFolder+audioName+'\n', function (){
+    				transcribeByKaldi(sendResults);
+    			});
+    		});
+    	}else{
+    		fs.appendFile(utt, audioName+' ', function (){
+    			fs.appendFile(audio_utt,audioName+' '+audioFilesFolder+audioName+'\n', function (){
+    				createInput(i+1);
+    			});
+    		});
+    	}
+    	
 	};	
 
-	function callback(i,result,audioName,txtName,time){
+	function transcribeByKaldi(callback){
+		//use chid process of node js to call an unix command that give the transcribed text in stdout. 
+		//This stdout is the output of the function
+		var exec = require('child_process').exec;
+		var cmd1 = 'cd '+__dirname+'/lib/kaldi-trunk/egs/online-nnet2/';
+		var cmd2 = './run.sh ';
+		var start = new Date().getTime();
+		exec(cmd1+' ; '+cmd2, function(stderr) {
+			console.log(stderr);
+			var end = new Date().getTime();
+			var timeExec = (end - start)/(1000*60);
+			console.log('time: '+timeExec);
+			var output = __dirname+'/lib/kaldi-trunk/egs/online-nnet2/output.txt'
+			var results = fs.readFileSync(output).toString().split('\n');
+			console.log(results)
+			callback(results,timeExec,0);
+		}); 
+	};
+
+	function sendResults(results,time,i){
+		console.log('i = '+i)
+		var result = results[i].substr(results[i].indexOf(' ',0)+1);
+		txtName = (lines[i].toString().split(' '))[1];
+		console.log(result);
 		var originalText = fs.readFileSync(textFilesFolder+txtName,"UTF-8").toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
 		console.log('org: '+originalText);
 		var resultTable = result.split(' ');
 		var textTable = originalText.split(' ');
 		var keywords = getKeywords(keywordsFolder+txtName);
 		//send socket to client time by time
-    	console.log('Kaldi send transcript of file '+audioName+'>>>>>');
     	//simplifize
     	lemmer.lemmatize(resultTable, function(err, transformResult){
 			var resultSimplifize='';
@@ -61,17 +117,15 @@ exports.transcribeCorpusKaldi = function(req, res) {
 						socket.emit('send msg', {
 							WER: calculs.werCalcul(campare,textSimplifize),
 							recall: precisionRecall.recall,
-							timeExec: time
+							timeExec: 0
 						});
-						console.log('Kaldi is done with '+audioName+'>>>>>');
-						analize(i+1);		
+						sendResults(results,time,i+1);		
 					} else {
 						socket.emit('send last msg', {
 							WER: calculs.werCalcul(campare,textSimplifize),
 							recall: precisionRecall.recall,
 							timeExec: time
 						});
-						console.log('Kaldi is done with '+audioName+'>>>>>');
 					}
 				});
 			});
@@ -79,29 +133,11 @@ exports.transcribeCorpusKaldi = function(req, res) {
     }
 };
 
-//Transcribe by kaldi function that give the transcribed text in outpout
-function transcribeByKaldi(kaldiPath,filePath,i,txtName,audioName,callback){
-	//use chid process of node js to call an unix command that give the transcribed text in stdout. 
-	//This stdout is the output of the function
-	var exec = require('child_process').exec;
-	var cmd1 = 'cd '+kaldiPath+'/egs/online-nnet2/';
-	var cmd2 = './run.sh '+kaldiPath+' '+filePath;
-	var start = new Date().getTime();
-	exec(cmd1+' ; '+cmd2, function(error, stdout, stderr) {
-		var socket = require('./websocket.js').getSocket();
-		//console.log('fini '+audioName+' '+stdout);
-		if (stdout !== ""){
-			var end = new Date().getTime();
-			var timeExec = (end - start)/(1000*60);
-			console.log('time: '+timeExec)
-			console.log('trans: '+stdout);
-			callback(i,stdout,audioName,txtName,timeExec);
-		} else {
-			socket.emit('error', "There is error in transcribing.\nMaybe your corpus is emty or some files are missing like an audio does not have corresponding text.\nRe-create another corpus...");
-		}
-	}); 
-};
-
+//clear txt file
+function clearTxt(filePath){
+	var fs = require('fs');
+	fs.truncate(filePath, 0, function(){console.log('done')});
+}
 //get keywords
 function getKeywords (filePath){
 	var fs = require('fs-extra');

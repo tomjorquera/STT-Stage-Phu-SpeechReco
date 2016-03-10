@@ -118,7 +118,7 @@ function simplifize(listResult,i){
 						socket.emit('send msg',{
 							WER: wer,
 							recall: precisionRecall.recall,
-							timeExec: time
+							timeExec: 0
 						});
 						console.log('send result');
 						simplifize(listResult,i+1);

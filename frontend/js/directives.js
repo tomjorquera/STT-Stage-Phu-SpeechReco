@@ -128,7 +128,6 @@ angular.module('myApp.directives', ['chart.js']).
 			templateUrl: 'partials/choose-tool',
 			controller: function($scope, toolSelectedFactory, dataResult, seriesDraw){
 				var inputType = location.href.substr(location.href.lastIndexOf('/'));
-				console.log(inputType);
     			$scope.tools = ["Sphinx-4","Kaldi"];
     			$scope.selectionTool = toolSelectedFactory.getSelectedTool();
     			//update the tool variable and the link variable in toolSelectedFactory. 
@@ -815,6 +814,7 @@ angular.module('myApp.directives', ['chart.js']).
 				  		chartInstances =[];
 				  		chartInstances.push(chart);
 				  	}
+				  	console.log(chartInstances);
 				});
 
 				$scope.draw =function(){
@@ -825,7 +825,7 @@ angular.module('myApp.directives', ['chart.js']).
 						if (!data[0].stat){
 							$scope.msgDiag = "Transcribing a corpus before drawing its diagram";
 							$scope.showDiag = false;
-						}else if($scope.series.length === 1){
+						}else{
 							var values = data[0].value;
 							$scope.msgDiag = "";
 							$scope.showDiag = true;
@@ -847,7 +847,7 @@ angular.module('myApp.directives', ['chart.js']).
 							$scope.dataTime = [[values1[2]],[values2[2]]]
 						}
 						else{
-							$scope.msgDiag = "Transcribing a corpus before drawing its diagram";
+							$scope.msgDiag = "Transcribing 2 corpuses before drawing their diagrams";
 							$scope.showDiag = false;
 						} 
 					}
