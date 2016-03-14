@@ -13,7 +13,6 @@ exports.transcribeCorpusKaldi = function(req, res) {
 	var textFilesFolder = __dirname+'/../corpus/'+corpus+'/txt/';
 	var keywordsFolder = __dirname+'/../corpus/'+corpus+'/keywords/';
 	var kaldiRoot = __dirname+'/lib/kaldi-trunk';
-	var txtName;
 	var audioName;
 	var lines = fs.readFileSync(corpusFolder+corpus+'.txt').toString().split('\n');
 	var utt = __dirname+'/lib/kaldi-trunk/egs/online-nnet2/utt.txt';
@@ -70,30 +69,29 @@ exports.transcribeCorpusKaldi = function(req, res) {
 		var cmd1 = 'cd '+__dirname+'/lib/kaldi-trunk/egs/online-nnet2/';
 		var cmd2 = './run.sh ';
 		var start = new Date().getTime();
-		exec(cmd1+' ; '+cmd2, function(stderr) {
-			console.log(stderr);
+		exec(cmd1+' ; '+cmd2, function(stderr){
+			console.log('transcibe done');
 			var end = new Date().getTime();
 			var timeExec = (end - start)/(1000*60);
-			console.log('time: '+timeExec);
-			var output = __dirname+'/lib/kaldi-trunk/egs/online-nnet2/output.txt'
+			var output = __dirname+'/lib/kaldi-trunk/egs/online-nnet2/output.txt';
 			var results = fs.readFileSync(output).toString().split('\n');
-			console.log(results)
 			callback(results,timeExec,0);
 		}); 
 	};
 
 	function sendResults(results,time,i){
-		console.log('i = '+i)
+		console.log('Audio '+i)
 		var result = results[i].substr(results[i].indexOf(' ',0)+1);
-		txtName = (lines[i].toString().split(' '))[1];
-		console.log(result);
+		console.log("*transcribed*: "+result);
+		var txtName = (lines[i].toString().split(' '))[1];
 		var originalText = fs.readFileSync(textFilesFolder+txtName,"UTF-8").toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
-		console.log('org: '+originalText);
+		//console.log('org: '+originalText);
 		var resultTable = result.split(' ');
 		var textTable = originalText.split(' ');
 		var keywords = getKeywords(keywordsFolder+txtName);
 		//send socket to client time by time
     	//simplifize
+    	//lemmer.lemmatize(resultTable, function(err, transformResult){
     	lemmer.lemmatize(resultTable, function(err, transformResult){
 			var resultSimplifize='';
 			transformResult.forEach(function(word){
@@ -113,20 +111,34 @@ exports.transcribeCorpusKaldi = function(req, res) {
 				})
 				//lemmatize keywords
 				lemmer.lemmatize(keywordsSimplifize, function(err, transformKeywords){
+					var keywordsSimplifize = [];
+					keywords.forEach(function(keyword){
+						if (keyword!==''&&keyword!==' '){
+							keywordsSimplifize.push(keyword.toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"").replace(' ',''))
+						}
+					})
+					//var campare = campareText(result, originalText);
 					var precisionRecall = calculs.precisionRecall(resultSimplifize.split(' '), transformKeywords);
+					//var precisionRecall = calculs.precisionRecall(resultTable,keywordsSimplifize);
 					if (i !== (lines.length-1)){
 						socket.emit('send msg', {
 							WER: calculs.werCalcul(campare,textSimplifize),
+							//WER: calculs.werCalcul(campare, originalText),
 							recall: precisionRecall.recall,
 							timeExec: 0
 						});
+						var audio = results[i].substr(0,results[i].indexOf(' ',0));
+						console.log(audio+' msg is send');
 						sendResults(results,time,i+1);		
 					} else {
 						socket.emit('send last msg', {
 							WER: calculs.werCalcul(campare,textSimplifize),
+							//WER: calculs.werCalcul(campare, originalText),
 							recall: precisionRecall.recall,
 							timeExec: time
 						});
+						var audio = results[i].substr(0,results[i].indexOf(' ',0));
+						console.log(audio+' msg is send');
 					}
 				});
 			});

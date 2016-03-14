@@ -9,7 +9,6 @@ exports.werCalcul = function(diffObject,orgText){
 	diffObject.forEach(function(part){
 		if (part.removed){
 			part.value.split(' ').forEach(function(a){
-				//console.log('removed:'+a+'/');
 				if(a!==''){
 					removed += 1;
 				}			
@@ -17,7 +16,6 @@ exports.werCalcul = function(diffObject,orgText){
 		}
 		if (part.added){
 			part.value.split(' ').forEach(function(a){
-				//console.log('added:'+a+'/');
 				if(a!==''){
 					added += 1;
 				}
@@ -46,11 +44,6 @@ exports.werCalcul = function(diffObject,orgText){
 			N += 1;
 		}
 	});
-	console.log("For WER calcul");
-	console.log('removed = '+removed);
-	console.log('added = '+added);
-	console.log('subs = '+subs);
-	console.log('N = '+N);
 	var WER = (removed+added+subs)/N;
 	return WER.toFixed(3);
 }
@@ -69,11 +62,7 @@ exports.precisionRecall = function(result,keywords){
 		if (result.indexOf(keyword) > -1){
 			truePositives += 1;
 		}
-	});
-
-	console.log('tp = '+truePositives);
-	console.log('kwl = '+keywords.length+' '+keywords);
-	console.log('rsltl = '+resultLength+' '+result);
+	})
 	//recall = tp/tp+fp = tp/keywordsLength
 	var recall = truePositives/keywords.length;
 	//prec = tp/(tp+fn) = tp/kw dans result

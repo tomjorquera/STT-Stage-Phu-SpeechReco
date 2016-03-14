@@ -7,7 +7,13 @@ exports.transcribeKaldi = function(req, res) {
 	var lemmer =  require('lemmer');	
   	var selectedInput = req.params.inputtype;
   	var clientName = req.params.clientname;
-  	
+  	var utt = __dirname+'/lib/kaldi-trunk/egs/online-nnet2/utt.txt';
+	var audio_utt = __dirname+'/lib/kaldi-trunk/egs/online-nnet2/audio_utt.txt';
+	res.send(202);
+	//clear input
+	clearTxt(utt);
+	clearTxt(audio_utt);
+
   	//get data necessary which are original text and audio file (record audio or internet audio)
 	  
 	if (selectedInput === 'audio'){
@@ -41,15 +47,19 @@ exports.transcribeKaldi = function(req, res) {
 		};
 	} 
 	else {
-	    //treat the client request
-		switch (selectedInput){ 
-			case 'audio':
-				var kaldiRoot = __dirname+'/lib/kaldi-trunk';
-				console.log('transcribe by kaldi starting');
-				//kaldi function need the kaldi directory, audio file path and a function call as inputs
-				transcribeByKaldi(kaldiRoot,audioFile, callbackAudio);
-				//the callback function that will transfer the socket that composes the transcribe text, original text and the campare object
-				function callbackAudio(result){
+		createInput(clientName,audioFile);
+		//create input
+		function createInput(audioName,filePath){
+			fs.appendFile(utt, 'spk '+audioName, function (){
+				fs.appendFile(audio_utt,audioName+' '+filePath, function (){
+					transcribeByKaldi(sendMsg);
+				});
+			});
+		}
+		function sendMsg(result){
+			//treat the client request
+			switch (selectedInput){ 
+				case 'audio':
 					if (textFile !== 'error'){ //text file is uploaded
 						var originalText = fs.readFileSync(textFile,"UTF-8").toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,""); 
 						fs.unlinkSync(textFile);
@@ -73,9 +83,9 @@ exports.transcribeKaldi = function(req, res) {
 									compareObject: campareText(resultSimplifize, textSimplifize),
 									originalTextExport: textSimplifize,
 								});
+								console.log("kaldi fini");
 							});
 						});	
-						console.log("kaldi fini");
 					}
 					else {//text file is NOT uploaded
 						var resultTable = result.split(' ');
@@ -91,47 +101,46 @@ exports.transcribeKaldi = function(req, res) {
 							});
 						});		
 					}		
-				};
-				break;
-			case 'micro':
-				var kaldiRoot = __dirname+'/lib/kaldi-trunk';
-				transcribeByKaldi(kaldiRoot,audioFile, callbackMicro);
-				function callbackMicro(result){
+					break;
+				case 'micro':
 					//fs.unlinkSync(audioFile);
 					console.log("kaldi renvoie resultat");
 					socket.emit('send msg micro',{
 						transcribedText: result
 					});
-					console.log("kaldi fini");
-				};
-				break;
-			default:
-				break;
-	    }
+					break;
+				default:
+					break;
+		    }
+		}
 	}
 }
 
+
 //Transcribe by kaldi function that give the transcribed text in outpout
-function transcribeByKaldi(kaldiPath, filePath, callback){
+function transcribeByKaldi(callback){
 	//use chid process of node js to call an unix command that give the transcribed text in stdout. 
 	//This stdout is the output of the function
 	var exec = require('child_process').exec;
-	var cmd1 = 'cd '+kaldiPath+'/egs/online-nnet2/';
-	var cmd2 = './run.sh '+kaldiPath+' '+filePath;
-	exec(cmd1+' ; '+cmd2, function(error, stdout, stderr) {
-		if (stdout !== ""){
-			callback(stdout);
-		} else {
-			var socket = require('./websocket.js').getSocket();
-			socket.emit('send error', {
-			  transcribedText:" Error of transcript. Unknown problem happends"
-			});
-		}
-		if (error !== null) {
-			console.log('exec error: ' + error);
-		}
+	var cmd1 = 'cd '+__dirname+'/lib/kaldi-trunk/egs/online-nnet2/';
+	var cmd2 = './run.sh ';
+	var start = new Date().getTime();
+	exec(cmd1+' ; '+cmd2, function(stderr) {
+		var fs = require('fs-extra');
+		console.log(stderr);
+		var output = __dirname+'/lib/kaldi-trunk/egs/online-nnet2/output.txt'
+		var outputString = fs.readFileSync(output).toString();
+		var result = outputString.substr(outputString.indexOf(' ',0)+1);
+		console.log(result);
+		callback(result);
 	}); 
 };
+
+//clear txt file
+function clearTxt(filePath){
+	var fs = require('fs');
+	fs.truncate(filePath, 0, function(){console.log('done')});
+}
 
 //get the path of data necessary when it's an audio, recorded audio or text
 function getData(typeData, clientName){
