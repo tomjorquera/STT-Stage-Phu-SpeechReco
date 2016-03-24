@@ -54,8 +54,13 @@ exports.transcribeCorpusSphinx = function(req, res) {
 			for(var i=0;i<listAudio.length;i++){
 				var originalText = fs.readFileSync(listText[i],"UTF-8").toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
 				console.log('org: '+originalText);
-				var resultTable = results[i].split(' ');
-				var textTable = originalText.split(' ');
+				console.log('result: '+results[i]);
+				var tm = require('text-miner');
+				var my_corpus = new tm.Corpus([results[i],originalText]).removeWords(tm.STOPWORDS.EN);
+				console.log('result after: '+my_corpus.documents[0]);
+				console.log('org after: '+my_corpus.documents[1]);
+				var resultTable = my_corpus.documents[0].split(' ');
+				var textTable = my_corpus.documents[0].split(' ');
 				var keywords = getKeywords(listKw[i]);
 		    	listResult.push({
 		    		Text: textTable,

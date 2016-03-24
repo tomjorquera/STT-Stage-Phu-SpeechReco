@@ -95,38 +95,36 @@ exports.transcribeSphinx = function(req, res) {
 };
 
 //transcribe by sphinx function that give the transcribed text in outpout
-function transcribeBySphinx(filePath,num){
+function transcribeBySphinx(filePath){
 	var java = require('java');
-	if (num === undefined){
-		java.classpath.push(__dirname+'/lib/speechtotext.jar');	
-		var S2T = java.import('AppTestSpeechReco');
-		var appSpeech = new S2T();
-		var resultFinal = appSpeech.transcribeSync(filePath);
+	java.classpath.push(__dirname+'/lib/speechtotext.jar');	
+	var S2T = java.import('AppTestSpeechReco');
+	var appSpeech = new S2T();
+	var resultFinal = appSpeech.transcribeSync(filePath);
+
+	/*java.classpath.push(__dirname+"/../target/sphinx-4-lib-1.0-SNAPSHOT-jar-with-dependencies.jar");
+	//add sphinx-4 librairie
+	//Configuration
+	var Configuration = java.import("edu.cmu.sphinx.api.Configuration");
+	var FileInputStream = java.import("java.io.FileInputStream");
+	var SpeechResult = java.import("edu.cmu.sphinx.api.SpeechResult");
+	var Recognizer = java.import("edu.cmu.sphinx.api.StreamSpeechRecognizer");
+	var configuration = new Configuration();
+	configuration.setAcousticModelPathSync("resource:/edu/cmu/sphinx/models/en-us/en-us");
+	configuration.setDictionaryPathSync("resource:/edu/cmu/sphinx/models/en-us/cmudict-en-us.dict");
+	configuration.setLanguageModelPathSync("resource:/edu/cmu/sphinx/models/en-us/en-us.lm.bin");
+	var recognizer = new Recognizer(configuration);
+	var fileInputStream = new FileInputStream(filePath);
+	recognizer.startRecognitionSync(fileInputStream);
+	var resultFinal = "";
+	var result;
+	while ((result = recognizer.getResultSync()) !== null) {
+		resultFinal = resultFinal + result.getHypothesisSync() + ' ';
+		console.log('result: '+result.getHypothesisSync());
 	}
-	else{
-		java.classpath.push(__dirname+"/../target/sphinx-4-lib-1.0-SNAPSHOT-jar-with-dependencies.jar");
-		//add sphinx-4 librairie
-		//Configuration
-		var Configuration = java.import("edu.cmu.sphinx.api.Configuration");
-		var FileInputStream = java.import("java.io.FileInputStream");
-		var SpeechResult = java.import("edu.cmu.sphinx.api.SpeechResult");
-		var Recognizer = java.import("edu.cmu.sphinx.api.StreamSpeechRecognizer");
-		var configuration = new Configuration();
-		configuration.setAcousticModelPathSync("resource:/edu/cmu/sphinx/models/en-us/en-us");
-		configuration.setDictionaryPathSync("resource:/edu/cmu/sphinx/models/en-us/cmudict-en-us.dict");
-		configuration.setLanguageModelPathSync("resource:/edu/cmu/sphinx/models/en-us/en-us.lm.bin");
-		var recognizer = new Recognizer(configuration);
-		var fileInputStream = new FileInputStream(filePath);
-		recognizer.startRecognitionSync(fileInputStream);
-		var resultFinal = "";
-		var result;
-		while ((result = recognizer.getResultSync()) !== null) {
-			resultFinal = resultFinal + result.getHypothesisSync() + ' ';
-			console.log('result: '+result.getHypothesisSync());
-		}
-		recognizer.stopRecognitionSync();
-		console.log('result: '+resultFinal);
-	}
+	recognizer.stopRecognitionSync();
+	console.log('result: '+resultFinal);
+	}*/
 	return resultFinal;
 };  
 

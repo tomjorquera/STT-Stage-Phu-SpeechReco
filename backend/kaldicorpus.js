@@ -1,7 +1,7 @@
 "use strict";
 
 //for corpus
-exports.transcribeCorpusKaldi = function(req, res) {
+exports.transcribeCorpus = function(req, res) {
 	console.log('Kaldi recoie requete: '+req.params.corpusName);
 	var fs = require('fs-extra');
 	var socket = require('./websocket.js').getSocket();
@@ -15,6 +15,10 @@ exports.transcribeCorpusKaldi = function(req, res) {
 	var kaldiRoot = __dirname+'/lib/kaldi-trunk';
 	var audioName;
 	var lines = fs.readFileSync(corpusFolder+corpus+'.txt').toString().split('\n');
+	var stopWords;
+	fs.readFile(__dirname+'/lib/stopwords.txt','utf-8',function(err,data){
+		stopWords = data.split('\n');
+	})
 	var utt = __dirname+'/lib/kaldi-trunk/egs/online-nnet2/utt.txt';
 	var audio_utt = __dirname+'/lib/kaldi-trunk/egs/online-nnet2/audio_utt.txt';
 	res.send(202);
@@ -80,14 +84,18 @@ exports.transcribeCorpusKaldi = function(req, res) {
 	};
 
 	function sendResults(results,time,i){
-		console.log('Audio '+i)
+		console.log('Audio '+i);
 		var result = results[i].substr(results[i].indexOf(' ',0)+1);
-		console.log("*transcribed*: "+result);
+		console.log("result: "+result);
 		var txtName = (lines[i].toString().split(' '))[1];
 		var originalText = fs.readFileSync(textFilesFolder+txtName,"UTF-8").toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
-		//console.log('org: '+originalText);
-		var resultTable = result.split(' ');
-		var textTable = originalText.split(' ');
+		console.log('org: '+originalText);
+		var tm = require('text-miner');
+		var my_corpus = new tm.Corpus([result,originalText]).removeWords(stopWords);
+		console.log('result after: '+my_corpus.documents[0]);
+		console.log('org after: '+my_corpus.documents[1]);
+		var resultTable = my_corpus.documents[0].split(' ');
+		var textTable = my_corpus.documents[1].split(' ');
 		var keywords = getKeywords(keywordsFolder+txtName);
 		//send socket to client time by time
     	//simplifize
@@ -149,7 +157,7 @@ exports.transcribeCorpusKaldi = function(req, res) {
 //clear txt file
 function clearTxt(filePath){
 	var fs = require('fs');
-	fs.truncate(filePath, 0, function(){console.log('done')});
+	fs.truncate(filePath, 0, function(){});
 }
 //get keywords
 function getKeywords (filePath){

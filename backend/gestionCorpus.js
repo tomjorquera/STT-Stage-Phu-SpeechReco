@@ -128,7 +128,7 @@ function convert(audioName,corpusName){
         var cmd1 = 'cd '+corpusDir;
         var cmd2 = 'sox '+audioName+' -c 1 -r 8000 -b 16 ./../wav-for-kaldi/'+audioName;
         exec2(cmd1+' ; '+cmd2, function(error, stdout, stderr) {
-            fs.unlinkSync(corpusDir + '/' + audioName);
+            //fs.unlinkSync(corpusDir + '/' + audioName);
         });
     });
 }

@@ -1,0 +1,1 @@
+mix_56s.wav /Users/PhuThanh/Desktop/SpeechReco/backend/../corpus/test-1audiob/wav-for-sphinx/mix_56s.wav

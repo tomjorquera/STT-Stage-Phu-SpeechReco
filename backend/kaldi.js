@@ -1,6 +1,5 @@
 "use strict";
 
-
 exports.transcribeKaldi = function(req, res) {
 	var fs = require('fs-extra');
 	var socket = require('./websocket.js').getSocket(); 
@@ -9,6 +8,7 @@ exports.transcribeKaldi = function(req, res) {
   	var clientName = req.params.clientname;
   	var utt = __dirname+'/lib/kaldi-trunk/egs/online-nnet2/utt.txt';
 	var audio_utt = __dirname+'/lib/kaldi-trunk/egs/online-nnet2/audio_utt.txt';
+	//send message 202 to client to notice the client that its request is accepted
 	res.send(202);
 	//clear input
 	clearTxt(utt);
@@ -22,9 +22,6 @@ exports.transcribeKaldi = function(req, res) {
 	}
 	else if (selectedInput === 'micro')
 		var audioFile = getData("micro", clientName);
-
-	//send message 202 to client to notice the client that its request is accepted
-    res.send(202);
 
 	if (audioFile === 'error'){ //verify if audio data is ready 
 		switch (selectedInput){ 

@@ -64,26 +64,24 @@ angular.module('myApp.factories', []).
 	}).
 	factory('dataResult',function(){
 		return {	
-			data: [{value:[-1,-1,-1], stat: false},{value:[-1,-1,-1], stat: false}],
+			data: [],
 			setValue: function(werValue,recallValue,timeValue){
-				if(!this.data[0].stat){
-					this.data[0].value[0] = werValue;
-					this.data[0].value[1] = recallValue;
-					this.data[0].value[2] = timeValue;
-					this.data[0].stat = true;
-				} else{
-					this.data[1].value[0] = werValue;
-					this.data[1].value[1] = recallValue;
-					this.data[1].value[2] = timeValue;
-					this.data[1].stat = true;
+				for(var i=0;i<this.data.length;i++){
+					if(!this.data[i].stat){
+						this.data[i].value[0] = werValue;
+						this.data[i].value[1] = recallValue;
+						this.data[i].value[2] = timeValue;
+						this.data[i].stat = true;
+						break;
+					}
 				}
-				
 			},
 			getValue: function(){
 				return this.data;
 			},
-			clear: function(){
-				this.data = [{value:[-1,-1,-1], stat: false},{value:[-1,-1,-1], stat: false}];
+			clear: function(num){
+				this.data = [];
+				for(var i=0;i<num;i++) this.data.push({value:[-1,-1,-1], stat: false});
 			}
 		};
 	}).
