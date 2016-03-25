@@ -55,7 +55,8 @@ exports.transcribeCorpus = function(req, res){
 				var result='';
 				var resultsL = results.length;
 			  	for (var j=0;j<resultsL;j++){
-			  		result+=(results[j].trans.result[0]).alternative[0].transcript+' ';
+			  		if (rresults[j].trans.result[0] != undefined)
+			  			result+=(results[j].trans.result[0]).alternative[0].transcript+' ';
 			    	if (j===resultsL-1) {
 			    		var end = new Date().getTime();
 			    		time += (end-start)/(1000*60);

@@ -19,11 +19,9 @@ angular.module('myApp.factories', []).
 	}).
 	factory('mySocket', function (socketFactory) {
 	  	var myIoSocket = io.connect(location.href.substr(0,location.href.lastIndexOf('/')+1));
-
 		mySocket = socketFactory({
 			ioSocket: myIoSocket
 		});
-
 		return mySocket;
 	}).
 	factory('clientDistinct', function(){
@@ -99,6 +97,17 @@ angular.module('myApp.factories', []).
 			},
 			clearList: function(){
 				this.series = [];
+			}
+		}
+	}).
+	factory('transcribeFile',function(){
+		return{
+			file: null,
+			getFile:function(){
+				return this.file;
+			},
+			setFile:function(transFile){
+				this.file=transFile;
 			}
 		}
 	})

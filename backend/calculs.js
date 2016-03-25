@@ -38,7 +38,7 @@ exports.werCalcul = function(diffObject,orgText){
 		removed = removedBis;
 		added = 0;
 	}
-	//sum up in
+	//sum up n
 	orgText.split(' ').forEach(function(a){
 		if(a!==''){
 			N += 1;

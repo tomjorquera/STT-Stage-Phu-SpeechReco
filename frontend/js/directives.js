@@ -76,36 +76,55 @@ angular.module('myApp.directives', ['chart.js']).
 		return {
 			restrict: 'E',
 			templateUrl: 'partials/choose-file',
-			controller: function($scope, Upload, clientDistinct){
+			controller: function($scope, Upload, clientDistinct, transcribeFile, toolSelectedFactory){
 				$scope.uploadAudioStatus="";
 				$scope.uploadTextStatus="";
 				var filename = "";
                 $scope.upload = function (file) {
                 	$scope.convertMsg='';
-                	if(file !== null){
-                		console.log(clientDistinct.getNameClient());
-                		if (clientDistinct.getNameClient() === 'unknown'){
-                			clientDistinct.setNameClient(getRandomString());
-                		}
-	                	if (file.type === "audio/wav"){
-				        	$scope.uploadAudioStatus=file.name+" was uploaded";
-				        	filename = clientDistinct.getNameClient()+'.wav';
-				        	Upload.upload({
-					            url: 'upload/stream/'+filename,
-					            method: 'POST',
-					            file: file
-				        	});
-				        }
-				        else if (file.type === "text/plain"){
-				        	$scope.uploadTextStatus=file.name+" was uploaded";
-				        	filename = clientDistinct.getNameClient()+'.txt';
-				        	Upload.upload({
-					            url: 'upload/stream/'+filename,
-					            method: 'POST',
-					            file: file
-				        	});
-	            		}
-				    }
+	                if(file !== null){
+	                	if (toolSelectedFactory.getSelectedTool()[0] === 'Kaldi'){
+	                		if (clientDistinct.getNameClient() === 'unknown'){
+		                		clientDistinct.setNameClient(getRandomString());
+		                	}
+	                		if (file.type === "text/plain"){
+					        	$scope.uploadTextStatus=file.name+" was uploaded";
+					        	filename = clientDistinct.getNameClient()+'.txt';
+					        	Upload.upload({
+						            url: 'upload/stream/'+filename,
+						            method: 'POST',
+						            file: file
+					        	});
+		            		} else {
+		            			$scope.uploadAudioStatus=file.name+" was uploaded";
+	                			transcribeFile.setFile(file);
+		            		}
+	                	}
+	                	else{
+	                		console.log(clientDistinct.getNameClient());
+	                		if (clientDistinct.getNameClient() === 'unknown'){
+	                			clientDistinct.setNameClient(getRandomString());
+	                		}
+		                	if (file.type === "audio/wav"){
+					        	$scope.uploadAudioStatus=file.name+" was uploaded";
+					        	filename = clientDistinct.getNameClient()+'.wav';
+					        	Upload.upload({
+						            url: 'upload/stream/'+filename,
+						            method: 'POST',
+						            file: file
+					        	});
+					        }
+					        else if (file.type === "text/plain"){
+					        	$scope.uploadTextStatus=file.name+" was uploaded";
+					        	filename = clientDistinct.getNameClient()+'.txt';
+					        	Upload.upload({
+						            url: 'upload/stream/'+filename,
+						            method: 'POST',
+						            file: file
+					        	});
+		            		}
+					    }
+                	}
 			    }; 
 			}
 		}
@@ -167,7 +186,7 @@ angular.module('myApp.directives', ['chart.js']).
 		return {
 			restrict: 'E',
 			templateUrl: 'partials/transcribe-audio',
-			controller: function($scope, $http, toolSelectedFactory, mySocket, clientDistinct){
+			controller: function($scope, $http, toolSelectedFactory, mySocket, clientDistinct,transcribeFile){
 				//scope.isShow decide show or hide the loading icon and the transcribe text part
 				//isShow = false => transcribe text part is showed and loading icon is hided
 				$scope.isShow = false;
@@ -241,21 +260,69 @@ angular.module('myApp.directives', ['chart.js']).
 					$scope.transcribedText = "";
 					$scope.originalText = "";
 					//send request to server
-					$http({
-				      method: 'GET',
-				      url: '/transcribe/'+tool+'/audio/'+clientDistinct.getNameClient()
-				    }).
-				    success(function(data, status, headers, config) {
-				      console.log('requete accepte');
-				      if (tool === "Sphinx-4"){
-				      	mySocket.connect('http://localhost:8080/',{'forceNew':true });
-				      }
-				    }).
-				    error(function(data, status, headers, config) {
-				      $scope.transcribedText = 'Error!';
-				      $scope.isShow = false;
-				      transcribeButton.removeAttribute("disabled");
-				    });
+					if (tool === 'Kaldi'){
+						var ws = new WebSocket("ws://localhost:8888/client/ws/speech");
+						var transFinal = "";
+						ws.onopen = function (event) {
+							console.info('open');
+							ws.send(transcribeFile.getFile()); 
+							ws.send("EOS");
+						};
+
+						ws.onclose = function (event) {
+							console.info('close');
+							console.log(transFinal)
+							//send transcribed text to server to receive compare text
+							$http({
+					      		method: 'POST',
+					      		url: '/transcribe/'+tool+'/audio/'+clientDistinct.getNameClient(),
+					      		data: {value: transFinal},
+					      		headers: { 'Content-Type': 'application/json' }
+						    }).
+						    success(function(data, status, headers, config) {
+						      	console.log('requete accepte');
+						      	mySocket.connect('http://localhost:8080/',{'forceNew':true });
+						    }).
+						    error(function(data, status, headers, config) {
+						      	$scope.transcribedText = 'Error!';
+						      	transcribeButton.removeAttribute("disabled");
+						    });
+						};
+
+						ws.onerror = function (event) {
+							console.info('error');
+						};
+						var old="&bull; Transcribed text here: ";
+						ws.onmessage = function (event) {
+							var hyp = JSON.parse(event.data);
+							if (hyp.result != undefined){
+								var trans = hyp.result.hypotheses[0].transcript;
+								if (JSON.parse(event.data).result.final){
+									transFinal += trans+' ';
+									document.getElementById("transcribedText").innerHTML = old+trans+' ';
+									old = document.getElementById("transcribedText").innerHTML.toString();
+								}
+								else document.getElementById("transcribedText").innerHTML = old + trans;
+							}
+						}
+						
+					} else {
+						$http({
+					      	method: 'GET',
+					      	url: '/transcribe/'+tool+'/audio/'+clientDistinct.getNameClient()
+					    }).
+					    success(function(data, status, headers, config) {
+					      	console.log('requete accepte');
+					      	if (tool === "Sphinx-4"){
+					      		mySocket.connect('http://localhost:8080/',{'forceNew':true });
+					      	}
+					    }).
+					    error(function(data, status, headers, config) {
+					      	$scope.transcribedText = 'Error!';
+					      	$scope.isShow = false;
+					      	transcribeButton.removeAttribute("disabled");
+					    });
+					}
 				}	
 			},
 		}

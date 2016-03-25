@@ -67,7 +67,7 @@ app.get('/api/name', api.name);
 //transcribe audio by sphinx-4
 app.get('/transcribe/Sphinx-4/:inputtype/:clientname', sphinx.transcribeSphinx);
 //transcribe audio by kaldi
-app.get('/transcribe/Kaldi/:inputtype/:clientname', kaldi.transcribeKaldi);
+app.post('/transcribe/Kaldi/:inputtype/:clientname', kaldi.transcribeKaldi);
 //transcribe corpus by kaldi
 app.get('/transcribecorpus/Kaldi/:corpusName', kaldiCorpus.transcribeCorpus);
 //transcribe corpus by sphinx-4
