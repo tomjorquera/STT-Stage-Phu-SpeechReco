@@ -16,7 +16,7 @@ var express = require('express'),
   socket = require('./backend/websocket'),
   //kaldiCorpus = require('./backend/kaldicorpus'),
   kaldiCorpus = require('./backend/kaldiRealTimeCorpus'),
-  sphinxCorpus = require('./backend/sphinx4corpusbis'),
+  sphinxCorpus = require('./backend/sphinx4'),
   googleApi = require('./backend/googleApiCorpus'),
   gestionCorpus = require('./backend/gestionCorpus');
 

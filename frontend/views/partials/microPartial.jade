@@ -10,9 +10,9 @@ div(ng-controller='tabController')
 		li(ng-class='{active:isSet(3)}') 
 			a(ng-click="setTab(3)") Step 3
 	div.cadre-type1(ng-show='isSet(1)')
-		audio-record
-	div.cadre-type2(ng-show='isSet(2)')
 		choose-tool
+	div.cadre-type2(ng-show='isSet(2)')
+		audio-record
 	div.cadre-type2(ng-show='isSet(3)')
 		convert-audio
 br

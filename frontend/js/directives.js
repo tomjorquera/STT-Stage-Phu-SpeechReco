@@ -174,6 +174,11 @@ angular.module('myApp.directives', ['chart.js']).
 			      			toolSelectedFactory.setSelectedTool(tool);
 		      				$scope.selectionTool = toolSelectedFactory.getSelectedTool();
 		      				break;
+		      			case "/yourmicro":
+			      			toolSelectedFactory.clearList();
+			      			toolSelectedFactory.setSelectedTool(tool);
+		      				$scope.selectionTool = toolSelectedFactory.getSelectedTool();
+		      				break;
 		      			default:
 		      				break;
     				};
@@ -305,7 +310,6 @@ angular.module('myApp.directives', ['chart.js']).
 								else document.getElementById("transcribedText").innerHTML = old + trans;
 							}
 						}
-						
 					} else {
 						$http({
 					      	method: 'GET',
@@ -393,73 +397,224 @@ angular.module('myApp.directives', ['chart.js']).
 		return{
 			restrict:'E',
 			templateUrl: 'partials/audio-record',
-			controller: function($scope, $http, clientDistinct){
-				//get element in the template
+			controller: function($scope, $http, clientDistinct, toolSelectedFactory){
+				//configuration of the recorder
+				var RECORDER_WORKER_PATH = '../components/record/recorderWorker.js';
+				var recorder;
+				var audioContext;
+				// Initialized by startListening()
+				var ws;
+				var intervalKey;
+				var init = function() {
+					var audioSourceConstraints = {};
+					try {
+						window.AudioContext = window.AudioContext || window.webkitAudioContext;
+						navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+						window.URL = window.URL || window.webkitURL;
+						audioContext = new AudioContext();
+					} catch (e) {
+						// Firefox 24: TypeError: AudioContext is not a constructor
+						// Set media.webaudio.enabled = true (in about:config) to fix this.
+						console.log("Error initializing Web Audio browser: " + e);
+					}
+
+					if (navigator.getUserMedia) {
+						audioSourceConstraints.audio = true;
+						navigator.getUserMedia(audioSourceConstraints, startUserMedia, function(e) {
+							console.log("No live audio input in this browser: " + e);
+						});
+					} else {
+						console.log("No user media support");
+					}
+				}
+				// Private methods
+				function startUserMedia(stream) {
+					var input = audioContext.createMediaStreamSource(stream);
+					// make the analyser available in window context
+					window.userSpeechAnalyser = audioContext.createAnalyser();
+					input.connect(window.userSpeechAnalyser);
+
+					//config.rafCallback();
+
+					recorder = new Recorder(input, { workerPath : RECORDER_WORKER_PATH });
+					console.log('Recorder initialized');
+				}
+
+				var startListening = function() {
+					if (! recorder) {
+						console.log("Recorder undefined");
+						return;
+					}
+
+					try {
+						ws = createWebSocket();
+					} catch (e) {
+						console.log("No web socket support in this browser!");
+					}
+				}
+
+				// Stop listening, i.e. recording and sending of new input.
+				var stopListening = function() {
+					// Stop the regular sending of audio
+					clearInterval(intervalKey);
+					// Stop recording
+					if (recorder) {
+						recorder.stop();
+						console.log('Stopped recording');
+						// Push the remaining audio to the server
+						recorder.export16kMono(function(blob) {
+							socketSend(blob);
+							recorder.clear();
+						}, 'audio/x-raw');
+					} else {
+						console.log("Recorder undefined");
+					}
+				}
+
+				var createWebSocket = function(){
+					var old="&bull; Transcribed text here: ";
+					var ws = new WebSocket("ws://localhost:8888/client/ws/speech?content-type=audio/x-raw,+layout=(string)interleaved,+rate=(int)16000,+format=(string)S16LE,+channels=(int)1");
+					ws.onopen = function () {
+						intervalKey = setInterval(function() {
+							recorder.export16kMono(function(blob) {
+								socketSend(blob);
+							}, 'audio/x-raw');
+							req++;
+						}, 5000);
+						// Start recording
+						recorder.record();
+					};
+					ws.onclose = function () {
+						console.info('close');
+					};
+					ws.onerror = function () {
+						console.info('error');
+					};
+					ws.onmessage = function () {
+						var hyp = JSON.parse(event.data);
+						console.log(hyp);
+						messF++
+						if (hyp.result != undefined){
+							var trans = hyp.result.hypotheses[0].transcript;
+							if (JSON.parse(event.data).result.final){
+								document.getElementById("transcribedText").innerHTML = old+trans+' ';
+								old = document.getElementById("transcribedText").innerHTML.toString();
+							}
+							else document.getElementById("transcribedText").innerHTML = old + trans;
+						}
+					}
+					return ws;
+				}
+				var socketSend = function(item){
+					if (ws) {
+						var state = ws.readyState;
+						if (state===1) {
+							// If item is an audio blob
+							if (item instanceof Blob) {
+								if (item.size > 0) {
+									ws.send(item);
+									console.log('Send: blob: ' + item.type + ', ' + item.size + item);
+								} else {
+									console.log('Send: blob: ' + item.type + ', EMPTY');
+								}
+							// Otherwise it's the EOS tag (string)
+							} else {
+								ws.send(item);
+								console.log('Send tag: ' + item);
+							}
+						} else {
+							console.log('WebSocket: readyState!=1: ' + state + ": failed to send: " + item);
+						}
+					} else {
+						console.log('No web socket connection: failed to send: ' + item);
+					}
+				}
+				/*****************************************************************************************/
 				var startRecording = document.getElementById('start-recording');
 				var stopRecording = document.getElementById('stop-recording');
 				var audioPreview = document.getElementById('audio-preview');
 				var audio = document.querySelector('audio');
 				var recordAudio;
 				var audioRecordedFile;
+				var intervalSend;
+				var messF = 0;
+				var req = 0;
+				init();
 				//when stat recording
 				startRecording.onclick = function() {
-					startRecording.disabled = true;
-					document.getElementById('recordStatus').innerHTML="";
-					navigator.getUserMedia = ( navigator.getUserMedia ||
-                       navigator.webkitGetUserMedia ||
-                       navigator.mozGetUserMedia ||
-                       navigator.msGetUserMedia);
-					navigator.getUserMedia({
-				        	audio: true
-				    	}, 
-				    	function(stream) {
-				    		//Record RTC is an object in recordrtc component of angular
-				        	recordAudio = RecordRTC(stream, {
-				        	    bufferSize: 16384,
-								type: 'audio'
-				        	});
-				        	recordAudio.startRecording();
-				    	}, 
-				    	function(error) {
-            				alert(JSON.stringify(error));
-        				}	
-        			);
-      				stopRecording.disabled = false;			 	
+					messF = 0;
+					req = 0;
+					if (toolSelectedFactory.getSelectedTool()[0]==="Kaldi"){
+						startListening();
+						startRecording.disabled = true;
+	      				stopRecording.disabled = false;					
+					} else if(toolSelectedFactory.getSelectedTool()[0]==="Sphinx-4"){
+						startRecording.disabled = true;
+						document.getElementById('recordStatus').innerHTML="";
+						navigator.getUserMedia = ( navigator.getUserMedia ||
+	                       navigator.webkitGetUserMedia ||
+	                       navigator.mozGetUserMedia ||
+	                       navigator.msGetUserMedia);
+						navigator.getUserMedia({
+					        	audio: true
+					    	}, 
+					    	function(stream) {
+					    		//Record RTC is an object in recordrtc component of angular
+					        	recordAudio = RecordRTC(stream, {
+					        	    bufferSize: 16384,
+									type: 'audio'
+					        	});
+					        	recordAudio.startRecording();
+					    	}, 
+					    	function(error) {
+	            				alert(JSON.stringify(error));
+	        				}	
+	        			);
+	      				stopRecording.disabled = false;	
+					}
 				};
 				stopRecording.onclick = function() {
-					recordAudio.stopRecording(function() {
-        				recordAudio.getDataURL(function(audioDataURL) {
-            				//postFiles(audioDataURL);
-			                audioRecordedFile = {
-			            		type: 'audio/wav',
-			            		contents: audioDataURL
-			    			};
-			    			//play preview
-			    			audioPreview.src = audioDataURL;
-                    		audioPreview.play();
+					if (toolSelectedFactory.getSelectedTool()[0]==="Kaldi"){
+						socketSend('EOS');
+						stopListening();
+						console.log(req+'-'+messF);
+						stopRecording.disabled = true;
+					    startRecording.disabled = false;
+					} else if(toolSelectedFactory.getSelectedTool()[0]==="Sphinx-4"){
+						recordAudio.stopRecording(function() {
+	        				recordAudio.getDataURL(function(audioDataURL) {
+	            				//postFiles(audioDataURL);
+				                audioRecordedFile = {
+				            		type: 'audio/wav',
+				            		contents: audioDataURL
+				    			};
+				    			//play preview
+				    			audioPreview.src = audioDataURL;
+	                    		audioPreview.play();
 
-                    		//post file
-                    		clientDistinct.setNameClient(getRandomString());
-                    		$http({
-				      			method: 'POST',
-				      			url: '/upload/file/'+clientDistinct.getNameClient(),
-								data: JSON.stringify(audioRecordedFile)
-				    		}).
-                    		success(function(data, status, headers, config) {
-                    			console.log("sent ok");
-                    		}).
-                    		error(function(data, status, headers, config) {
-				      			console.log('Error!');
-				    		});
-				    		//clear button and update message after recording
-				    		stopRecording.disabled = true;
-				    		startRecording.disabled = false;
-				    		document.getElementById('recordStatus').innerHTML = "Your recording was saved on my server"+"<br>" 
-				    		+"Now, you could choose a toolkit and click transcribe button to transcribe it or listen to the preview above";
-		    			});
-    				});	
+	                    		//post file
+	                    		clientDistinct.setNameClient(getRandomString());
+	                    		$http({
+					      			method: 'POST',
+					      			url: '/upload/file/'+clientDistinct.getNameClient(),
+									data: JSON.stringify(audioRecordedFile)
+					    		}).
+	                    		success(function(data, status, headers, config) {
+	                    			console.log("sent ok");
+	                    		}).
+	                    		error(function(data, status, headers, config) {
+					      			console.log('Error!');
+					    		});
+					    		//clear button and update message after recording
+					    		stopRecording.disabled = true;
+					    		startRecording.disabled = false;
+					    		document.getElementById('recordStatus').innerHTML = "Your recording was saved on my server"+"<br>" 
+					    		+"Now, you could choose a toolkit and click transcribe button to transcribe it or listen to the preview above";
+			    			});
+	    				});
+					}
                 };
-    			//fonction create random name for each recorded audio file
+				//fonction create random name for each recorded audio file
 				function getRandomString() {
 	                if (window.crypto) {
 	                    var a = window.crypto.getRandomValues(new Uint32Array(3)),
@@ -469,8 +624,8 @@ angular.module('myApp.directives', ['chart.js']).
 	                } else {
 	                    return (Math.random() * new Date().getTime()).toString(36).replace( /\./g , '');
 	                }
-	            };			
-            }
+	            };
+	        }		
 		};
 	}).
 	directive('chooseInput',function(){
@@ -820,7 +975,7 @@ angular.module('myApp.directives', ['chart.js']).
 				$scope.labels = ['WER', 'Recall'];
 				$scope.labelsTime = ['Time Exec'];
 				$scope.colors = 
-					[{ // blue
+					[{ // Blue
 						fillColor: '#006699',
 						strokeColor: '#006699',
 						pointColor: '#006699',

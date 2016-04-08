@@ -41,19 +41,6 @@ exports.addContent = function(req,res){
 		}
 	});
 	res.end();
-	/*process.nextTick(function(){
-		if(verifieContent(corpusName)){
-			res.json({
-				dataReady: true
-			});
-		}
-		else {
-			deleteFolderRecursive(__dirname+'/../corpus/'+corpusName+'/');
-			res.json({
-				dataReady: false
-			});
-		}
-	});*/
 }
 
 //verifie if all required contents exist
@@ -120,15 +107,41 @@ exports.getCorpus = function(req, res) {
 function convert(audioName,corpusName){
 	var  fs = require('fs-extra');
 	var corpusDir = __dirname+'/../corpus/'+corpusName+'/wav/';
-    var exec = require('child_process').exec;
-    var cmd1 = 'cd '+corpusDir;
-    var cmd2 = 'sox '+audioName+' -c 1 -r 16000 -b 16 ./../wav-for-sphinx/'+audioName;
-    exec(cmd1+' ; '+cmd2, function(error, stdout, stderr) {
-        var exec2 = require('child_process').exec;
-        var cmd1 = 'cd '+corpusDir;
-        var cmd2 = 'sox '+audioName+' -c 1 -r 8000 -b 16 ./../wav-for-kaldi/'+audioName;
-        exec2(cmd1+' ; '+cmd2, function(error, stdout, stderr) {
-            //fs.unlinkSync(corpusDir + '/' + audioName);
-        });
+    var ffmpeg = require('fluent-ffmpeg');
+    var file = corpusDir + '/' + audioName;
+    var outputKaldi = __dirname+'/../corpus/'+corpusName+'/wav-for-kaldi/'+audioName.replace(/mp3/,"wav");
+    var outputSphinx= __dirname+'/../corpus/'+corpusName+'/wav-for-sphinx/'+audioName.replace(/mp3/,"wav");
+    ffmpeg.ffprobe(file, function (err, info) {
+        ffmpeg()
+        .on('error', function (err) {
+            console.log(err);
+        })
+        .on('end', function () {
+        	ffmpeg.ffprobe(file, function (err, info) {
+		        ffmpeg()
+		        .on('error', function (err) {
+		            console.log(err);
+		        })
+		        .on('end', function () {
+		        	console.log("convert ok")
+		        })
+		        .input(file)
+		        .output(outputSphinx)
+		        .setStartTime(0)
+		        .duration(info.format.duration)
+		        .audioFrequency(16000)
+		        .toFormat('wav')
+		        .run();
+		    });
+        })
+        .input(file)
+        .output(outputKaldi)
+        .setStartTime(0)
+        .duration(info.format.duration)
+        .audioFrequency(8000)
+        .audioChannels(1)
+        .audioBitrate(16)
+        .toFormat('wav')
+        .run();
     });
 }

@@ -43,7 +43,7 @@ exports.transcribeKaldi = function(req,res){
           }); 
         }
         else {//text file is NOT uploaded
-          var resultTable = result.replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"").split(' ');
+          /*var resultTable = result.replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"").split(' ');
           lemmer.lemmatize(resultTable, function(err, transformResult){
             var resultSimplifize='';
             transformResult.forEach(function(word){
@@ -54,7 +54,12 @@ exports.transcribeKaldi = function(req,res){
               compareObject: "",
               originalTextExport: "",
             });
-          });   
+          }); */
+          socket.emit('send msg audio', {
+            transcribedText: result,
+            compareObject: "",
+            originalTextExport: "",
+          });  
         }   
         break;
       case 'micro':
