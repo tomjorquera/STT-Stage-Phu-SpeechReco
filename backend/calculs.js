@@ -1,6 +1,7 @@
 "use strict";
 
 exports.werCalcul = function(diffObject,orgText){
+	console.log('calcul wer...');
 	var added = 0;
 	var removed = 0;
 	var subs = 0;
@@ -44,11 +45,14 @@ exports.werCalcul = function(diffObject,orgText){
 			N += 1;
 		}
 	});
+	console.log('('+removed+' + '+added+' + '+subs+')/ '+N);
 	var WER = (removed+added+subs)/N;
+	console.log('calcul wer is done');
 	return WER.toFixed(3);
 }
 
 exports.precisionRecall = function(result,keywords){
+	console.log("calcul recall ...");
 	var truePositives = 0;
 	var resultLength = 0;
 	//cut off the no character words
@@ -69,6 +73,7 @@ exports.precisionRecall = function(result,keywords){
 	//var prec = truePositives/resultLength;
 	//F1-score
 	//var fScore = (2*precision*recall)/(precision+recall);
+	console.log("calcul recall is done");
 	return {
 		recall: recall.toFixed(3)
 	}

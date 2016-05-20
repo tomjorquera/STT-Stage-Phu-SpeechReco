@@ -16,6 +16,7 @@ exports.transcribeCorpus = function(req,res){
   var input = [];
 
   res.send(202);
+
   createInput(0);
   function createInput(i){
       var files = lines[i].toString().split(' ');
@@ -27,6 +28,8 @@ exports.transcribeCorpus = function(req,res){
         transcribe(input,0);  
       }
   };
+  
+
   function transcribe(filePaths,i){
     if (i!==filePaths.length) {
       var start = new Date().getTime();
@@ -38,8 +41,14 @@ exports.transcribeCorpus = function(req,res){
           return;
         }
         var resultsL = results.length;
-        result=results.trans.hypotheses[0].utterance+' ';
-        console.log(result)
+        console.log(results.trans);
+        var result = results.trans.hypotheses[0].utterance;
+        var transcriptFile = __dirname+'/../corpus/'+corpus+'/transcript_file_'+i+'.txt';
+        var fs = require('fs-extra');
+        fs.appendFile(transcriptFile,result.replace(/[.]/g,"\n"), function (err) {
+            if (err) return console.log(err);
+            console.log("finish "+filePaths[i]);
+        });
         output.push({tempExec: results.temp,trans: result.replace(/\[noise\]/g,"").replace(/\[laughter\]/g,"").replace(/mm/g,"")});
         transcribe(filePaths,i+1);
       });
@@ -50,17 +59,23 @@ exports.transcribeCorpus = function(req,res){
   }
 
   function sendResults(results,i){
-    console.log('Audio '+i)
-    var result = results[i].trans;
+    console.log(results);
+    console.log('Audio '+i);
+    var resultTrans = results[i].trans;
     var txtName = (lines[i].toString().split(' '))[1];
-    var originalText = fs.readFileSync(textFilesFolder+txtName,"UTF-8").toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
-    //console.log('org: '+originalText);
-    var resultTable = result.replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"").split(' ');
+    var loadTxt = fs.readFileSync(textFilesFolder+txtName,"UTF-8").toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+    var orgFile = __dirname+'/../corpus/'+corpus+'/original_file_'+i+'.txt';
+    fs.appendFile(orgFile,loadTxt.replace(/[.]/g,"\n"), function (err) {
+        if (err) return console.log(err);
+    });
+    var originalText = cleanText(loadTxt);
+    var transcriptTxt = cleanText(resultTrans);
+    console.log('transcris: '+transcriptTxt);
+    var resultTable = transcriptTxt.split(' ');
     var textTable = originalText.split(' ');
+    console.log(originalText);
     var keywords = getKeywords(keywordsFolder+txtName);
-    //send socket to client time by time
-    //simplifize
-    //lemmer.lemmatize(resultTable, function(err, transformResult){
+    var lemmer =  require('lemmer');
     lemmer.lemmatize(resultTable, function(err, transformResult){
       var resultSimplifize='';
       transformResult.forEach(function(word){
@@ -70,13 +85,15 @@ exports.transcribeCorpus = function(req,res){
       lemmer.lemmatize(textTable, function(err, transformText){
         var textSimplifize='';
         transformText.forEach(function(word){
-          textSimplifize+=word+' ';
+          if (word!==''&&word!==' ')
+            textSimplifize+=word+' ';
         });
-        var campare = campareText(resultSimplifize, textSimplifize);
-        var keywordsSimplifize = [];
+        console.log(textSimplifize);
+        //console.log(keywords);
+        var keywordsSimplifize = []; 
         keywords.forEach(function(keyword){
           if (keyword!==''&&keyword!==' '){
-            keywordsSimplifize.push(keyword.toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"").replace(' ',''))
+            keywordsSimplifize.push(keyword.toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"").replace(' ',''));
           }
         })
         //lemmatize keywords
@@ -84,56 +101,56 @@ exports.transcribeCorpus = function(req,res){
           var keywordsSimplifize = [];
           keywords.forEach(function(keyword){
             if (keyword!==''&&keyword!==' '){
-              keywordsSimplifize.push(keyword.toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"").replace(' ',''))
+              keywordsSimplifize.push(keyword.toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"").replace(/ /g,''));
             }
           })
-          //var campare = campareText(result, originalText);
+          //console.log(keywordsSimplifize);
+          var campare = campareText(resultSimplifize, textSimplifize);
           var precisionRecall = calculs.precisionRecall(resultSimplifize.split(' '), transformKeywords);
-          //var precisionRecall = calculs.precisionRecall(resultTable,keywordsSimplifize);
           if (i !== (lines.length-1)){
-            socket.emit('send msg', {
+            var sendObject = {
               WER: calculs.werCalcul(campare,textSimplifize),
-              //WER: calculs.werCalcul(campare, originalText),
               recall: precisionRecall.recall,
               timeExec: results[i].tempExec
-            });
-            sendResults(results,i+1);    
+            };
+            console.log(sendObject);
+            setTimeout(function(){
+              socket.emit('send msg', sendObject);
+            },2000);
+            console.log('sent msg')
+            sendResults(results,i+1);
           } else {
-            socket.emit('send last msg', {
+            //res.send(202);
+            var sendObject = {
               WER: calculs.werCalcul(campare,textSimplifize),
-              //WER: calculs.werCalcul(campare, originalText),
               recall: precisionRecall.recall,
               timeExec: results[i].tempExec
-            });
+            };
+            console.log(sendObject);
+            setTimeout(function(){
+              socket.emit('send last msg', sendObject);
+            },2000);
+            console.log('sent last msg')
           }
         });
       });
     }); 
   }
-}
 
-//get the path of data necessary when it's an audio, recorded audio or text
-function getData(typeData, clientName){
-  var fs = require('fs-extra');
-  var filePath = 'error';
-  switch (typeData){
-    case "audio":
-      if (fs.existsSync(__dirname+'/../upload_audio/'+clientName+'.wav-convertedforkaldi.wav'))
-        filePath = __dirname+'/../upload_audio/'+clientName+'.wav-convertedforkaldi.wav';
-      break;
-    case "micro":
-      if (fs.existsSync(__dirname+'/../recorded_audio/'+clientName+'.wav-convertedforkaldi.wav'))
-        filePath = __dirname+'/../recorded_audio/'+clientName+'.wav-convertedforkaldi.wav';
-      break;
-    case "text":
-      if (fs.existsSync(__dirname+'/../upload_text/'+clientName+'.txt'))
-        filePath = __dirname+'/../upload_text/'+clientName+'.txt';
-      break;
-    default:
-      break;
-  };
-  return filePath;
-};
+  //clean text
+  function cleanText(originalText){
+    var tm = require('text-miner');
+    var my_corpus = new tm.Corpus([originalText.replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()?]/g,"")]);
+    //my_corpus.removeWords(["\'s","ain\'t","aren\'t","can\'t","couldn\’t","didn\'t","doesn't","don't","hasn't","haven't","he's","here's","i'd","i'll","i'm","i've","isn't","it'd","it'll","it's","let's","shouldn't","that's","they'd","they'll","they're","they've","wasn't","we'd","we'll","we're","we've","weren't","what's","where's","who's","won't","wouldn't","you'd","you'll","you're","you've"]);
+    my_corpus.removeWords(["uh","yeah","yep","um","mmhmm","pe","ah","hmm","mm","mhm","yeah","\<unk\>","right","[noise]","[laughter]"]);
+    //my_corpus.removeWords(tm.STOPWORDS.EN);
+    my_corpus.removeNewlines();
+    my_corpus.removeInvalidCharacters();
+    my_corpus.clean();
+    var result = my_corpus.documents[0];
+    return result;
+  }
+}
 
 //campare 2 strings and give to output the diff object that show the different btw 2 strings
 function campareText(cibleText, originalText){
@@ -181,13 +198,13 @@ function sendRequest(file,callback) {
     transcribeClip(clip,function (err, result) {
       var end = new Date().getTime();
       var tempE = (end-start)/(1000*60);
-      fs.unlink(clip);
+      //fs.unlink(clip);
       if (!err) {
         return done(null, {temp: tempE, trans: result});
       }
       console.log(err);
     });
-  }
+  };
 
   function transcribeClip(clip,done) {
     fs.readFile(clip, function (err, data) {
@@ -201,6 +218,7 @@ function sendRequest(file,callback) {
           if (err) {
             return done(err);
           }        
+          //console.log(res);
           var text = res.text;
           if (!text) return done(null, {result: []});
           try {
@@ -210,4 +228,5 @@ function sendRequest(file,callback) {
           }
         });
     });
-  }};
+  };
+};

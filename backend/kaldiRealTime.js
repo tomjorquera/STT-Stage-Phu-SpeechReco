@@ -8,66 +8,64 @@ exports.transcribeKaldi = function(req,res){
   if (selectedInput === 'audio'){
       var textFile = getData("text", clientName);
   }
+  makeOutputFile(req.body.outputFormat, req.body.name);
   sendMsg(req.body.value.replace(/\[noise\]/g,"").replace(/\[laughter\]/g,"").replace(/mm/g,""));
-  res.send(202);
+  
+
+  function makeOutputFile(content,fileName){
+    var outputFile = __dirname+'/../'+fileName.replace(/wav/,"txt");
+    fs.appendFile(outputFile,content, function (err) {
+        if (err) return console.log(err);
+        console.log("output file created");
+    });
+  }
 
   function sendMsg(result){
     //treat the client request
     switch (selectedInput){ 
       case 'audio':
         if (textFile !== 'error'){ //text file is uploaded
-          console.log(textFile);
-          var originalText = fs.readFileSync(textFile,"UTF-8").toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,""); 
-          fs.unlinkSync(textFile);
+          var loadText = fs.readFileSync(textFile,"UTF-8").toLowerCase();
+          var originalText = cleanText(loadText); 
           console.log("kaldiRT renvoie resultat");
-          console.log('resultat: '+result);
-          var resultTable = result.replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"").split(' ');
+          var trancriptText = cleanText(result)
+          var resultTable = trancriptText.split(' ');
           var textTable = originalText.split(' ');
           lemmer.lemmatize(resultTable, function(err, transformResult){
             var resultSimplifize='';
             transformResult.forEach(function(word){
-              resultSimplifize+=word+' ';
+              if (word!==''&&word!==' ')
+                resultSimplifize+=word+' ';
             });
             lemmer.lemmatize(textTable, function(err, transformText){
+              //fs.unlinkSync(textFile);
               var textSimplifize='';
               transformText.forEach(function(word){
                 textSimplifize+=word+' ';
               });
-              socket.emit('send msg audio', {
+              console.log(textSimplifize);
+              console.log(resultSimplifize);
+              var sendObject = {
                 transcribedText: resultSimplifize,
                 compareObject: campareText(resultSimplifize, textSimplifize),
                 originalTextExport: textSimplifize,
-              });
+              };
+              console.log(sendObject);
+              res.send(202);
+              setTimeout(function(){
+                socket.emit('send msg audio', sendObject);
+              },1000);
               console.log("kaldiRT fini");
             });
           }); 
         }
-        else {//text file is NOT uploaded
-          /*var resultTable = result.replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"").split(' ');
-          lemmer.lemmatize(resultTable, function(err, transformResult){
-            var resultSimplifize='';
-            transformResult.forEach(function(word){
-              resultSimplifize+=word+' ';
-            });
-            socket.emit('send msg audio', {
-              transcribedText: resultSimplifize,
-              compareObject: "",
-              originalTextExport: "",
-            });
-          }); */
+        else {
           socket.emit('send msg audio', {
             transcribedText: result,
             compareObject: "",
             originalTextExport: "",
           });  
         }   
-        break;
-      case 'micro':
-        //fs.unlinkSync(audioFile);
-        console.log("kaldiRT renvoie resultat");
-        socket.emit('send msg micro',{
-          transcribedText: result
-        });
         break;
       default:
         break;
@@ -101,6 +99,20 @@ function getData(typeData, clientName){
 //campare 2 strings and give to output the diff object that show the different btw 2 strings
 function campareText(cibleText, originalText){
   var jsdiff = require('diff');
+  console.log("campare begin....");
   var diffObject = jsdiff.diffWords(originalText, cibleText);
+  console.log("campare's done");
   return diffObject;
 };
+
+//clean text
+function cleanText(originalText){
+  var tm = require('text-miner');
+  var my_corpus = new tm.Corpus([originalText.replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()?]/g,"")]);
+  my_corpus.removeWords(["uh","yeah","yep","um","mmhmm","pe","ah","hmm","mm","mhm","huh","uhhuh"]);
+  my_corpus.removeNewlines();
+  my_corpus.removeInvalidCharacters();
+  my_corpus.clean();
+  var result = my_corpus.documents[0].replace(/ ' /g," ");
+  return result;
+}

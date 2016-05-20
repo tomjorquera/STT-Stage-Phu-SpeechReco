@@ -17,7 +17,8 @@ var express = require('express'),
   //kaldiCorpus = require('./backend/kaldicorpus'),
   kaldiCorpus = require('./backend/kaldiRealTimeCorpus'),
   sphinxCorpus = require('./backend/sphinx4'),
-  googleApi = require('./backend/googleApiCorpus'),
+  googleApiCorpus = require('./backend/googleApiCorpus'),
+  googleAPI = require('./backend/googleAPI'),
   gestionCorpus = require('./backend/gestionCorpus');
 
 var app = module.exports = express();
@@ -66,6 +67,8 @@ app.get('/partials/:name', routes.partials);
 app.get('/api/name', api.name);
 //transcribe audio by sphinx-4
 app.get('/transcribe/Sphinx-4/:inputtype/:clientname', sphinx.transcribeSphinx);
+//transcribe audio by googleAPI
+app.get('/transcribe/GoogleApi/:inputtype/:clientname', googleAPI.transcribe);
 //transcribe audio by kaldi
 app.post('/transcribe/Kaldi/:inputtype/:clientname', kaldi.transcribeKaldi);
 //transcribe corpus by kaldi
@@ -73,7 +76,7 @@ app.get('/transcribecorpus/Kaldi/:corpusName', kaldiCorpus.transcribeCorpus);
 //transcribe corpus by sphinx-4
 app.get('/transcribecorpus/Sphinx-4/:corpusName', sphinxCorpus.transcribeCorpus);
 //transcribe corpus by google api
-app.get('/transcribecorpus/GoogleApi/:corpusName', googleApi.transcribeCorpus);
+app.get('/transcribecorpus/GoogleApi/:corpusName', googleApiCorpus.transcribeCorpus);
 //convert audio
 app.get('/convert/:toolname/:inputtype/:clientname', convert.convertAudio);
 //create folder for corpus

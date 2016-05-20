@@ -1,5 +1,5 @@
 exports.transcribeVoxforge = function(req,res){
-  console.log('Kaldi recoie requete: '+req.params.corpusName);
+  console.log('Sphinx-$ recoie requete: '+req.params.corpusName);
   var corpus = req.params.corpusName;
   var fs = require('fs-extra');
   var socket = require('./websocket.js').getSocket();
@@ -38,14 +38,13 @@ exports.transcribeVoxforge = function(req,res){
       sendRequest(folder+fileName, function (err, results) {
         if(err){
           console.log(err);
-          transcribe(folder,textList,i+1,numSpk,spkList,callback);
           return;
         }
-        var resultsL = results.length;
-        var result=results.trans.hypotheses[0].utterance+' ';
+        var result=results.trans;
+        console.log(result);
         var org = textList[i].substr(textList[i].indexOf(' ',0)+1);
-        output.push({text:org,tempExec:results.temp,trans:result.replace(/\[noise\]/g,"").replace(/\[laughter\]/g,"").replace(/mm/g,"").replace(/<unk>/g,"")});
-        console.log(result.replace(/\[noise\]/g,"").replace(/\[laughter\]/g,"").replace(/mm/g,"").replace(/<unk>/g,""));
+        output.push({text:org,tempExec:results.temp,trans:result.replace(/\[noise\]/g,"").replace(/\[laughter\]/g,"").replace(/mm/g,"")});
+        console.log(result.replace(/\[noise\]/g,"").replace(/\[laughter\]/g,"").replace(/mm/g,""));
         transcribe(folder,textList,i+1,numSpk,spkList,callback);
       });
     }
@@ -92,29 +91,6 @@ exports.transcribeVoxforge = function(req,res){
   }
 }
 
-//get the path of data necessary when it's an audio, recorded audio or text
-function getData(typeData, clientName){
-  var fs = require('fs-extra');
-  var filePath = 'error';
-  switch (typeData){
-    case "audio":
-      if (fs.existsSync(__dirname+'/../upload_audio/'+clientName+'.wav-convertedforkaldi.wav'))
-        filePath = __dirname+'/../upload_audio/'+clientName+'.wav-convertedforkaldi.wav';
-      break;
-    case "micro":
-      if (fs.existsSync(__dirname+'/../recorded_audio/'+clientName+'.wav-convertedforkaldi.wav'))
-        filePath = __dirname+'/../recorded_audio/'+clientName+'.wav-convertedforkaldi.wav';
-      break;
-    case "text":
-      if (fs.existsSync(__dirname+'/../upload_text/'+clientName+'.txt'))
-        filePath = __dirname+'/../upload_text/'+clientName+'.txt';
-      break;
-    default:
-      break;
-  };
-  return filePath;
-};
-
 //campare 2 strings and give to output the diff object that show the different btw 2 strings
 function campareText(cibleText, originalText){
   var jsdiff = require('diff');
@@ -122,45 +98,38 @@ function campareText(cibleText, originalText){
   return diffObject;
 };
 
-//get keywords
-function getKeywords (filePath){
-  var fs = require('fs-extra');
-  return fs.readFileSync(filePath).toString().split('\n');
-}
-
 function sendRequest(file,callback) {
+  console.log(file);
   var opts = {
-    sampleRate: 8000,
-    maxRequests: 1
+    key: 'AIzaSyCA9K61DkVf8iO3br_LgrSEtoq1ZL8q3uA',
+    sampleRate: 16000,
+    lang: 'en-US',
+    maxResults: 1,
+    pfilter: 1
   };
   var ffmpeg = require('fluent-ffmpeg');
   var fs = require('fs-extra');
   var request = require('superagent');
   ffmpeg.ffprobe(file, function (err, info) {
-    if (info !== undefined){
-      var temp = require('temp');
-      var outputfile = temp.path({suffix: '.wav'});
-      ffmpeg()
-      .on('error', function (err) {
-        console.log(err);
-        return callback(err);
-      })
-      .on('end', function () {
-        processClip(outputfile,callback);
-      })
-      .input(file)
-      .output(outputfile)
-      .setStartTime(0)
-      .duration(info.format.duration)
-      .audioFrequency(opts.sampleRate)
-      .toFormat('wav')
-      .run();
-    } else {
-      return callback(err);
-    }
+    var outputfile = 'tmp.wav';
+    ffmpeg()
+    .on('error', function (err) {
+      console.log(err);
+    })
+    .on('end', function () {
+      processClip(__dirname+'/../'+outputfile,callback);
+    })
+    .input(file)
+    .output(outputfile)
+    .setStartTime(0)
+    .duration(info.format.duration)
+    .audioFrequency(opts.sampleRate)
+    .toFormat('wav')
+    .run();
   });
   
   function processClip(clip,done) {
+    //console.log(clip);
     var start = new Date().getTime();
     transcribeClip(clip,function (err, result) {
       var end = new Date().getTime();
@@ -170,31 +139,20 @@ function sendRequest(file,callback) {
         return done(null, {temp: tempE, trans: result});
       }
       console.log(err);
-      return done(err);
     });
   }
 
   function transcribeClip(clip,done) {
     fs.readFile(clip, function (err, data) {
       if (err) return done(err);
-      request
-        .post('http://localhost:8888/client/dynamic/recognize')
-        .type('audio/x-wav; rate=' + opts.sampleRate)
-        .parse(request.parse.text)
-        .send(data)
-        .end(function (err, res) {
-          if (err) {
-            return done(err);
-          }    
-          //console.log(res);      
-          var text = res.text;
-          //console.log(text);
-          if (!text) return done(null, {result: []});
-          try {
-            done(null, JSON.parse(text));
-          } catch (ex) {
-            done(ex);
-          }
-        });
+      var exec = require('child_process').exec;
+      var cmd1 = 'cd '+__dirname+'/lib/sphinx-4/';
+      var cmd2 = 'java -jar sphinx4Voxforge.jar '+clip;
+      exec(cmd1+' ; '+cmd2, function(stderr,stdout) {
+        if (stdout !== undefined){
+          done(null,stdout);
+        } else done(stderr);
+      });
     });
-  }};
+  }
+};

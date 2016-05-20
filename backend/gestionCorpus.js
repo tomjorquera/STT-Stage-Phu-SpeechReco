@@ -23,6 +23,8 @@ exports.addContent = function(req,res){
 	var corpusName = req.params.corpusname;
 	var corpusDir = __dirname+'/../corpus/'+corpusName+'/wav/';
 	var txt = __dirname+'/../corpus/'+corpusName+'/'+corpusName+'.txt';
+	var keywordsDir = __dirname+'/../corpus/'+corpusName+'/keywords/';
+	var textDir = __dirname+'/../corpus/'+corpusName+'/txt/';
 	console.log(corpusDir);
 	var files = fs.readdirSync(corpusDir);
 	files.forEach(function(file){
@@ -30,12 +32,15 @@ exports.addContent = function(req,res){
 			var line = file+' '+file.replace('.wav','')+'.txt'+'\n';
 			fs.appendFile(txt, line, function (err) {
 		        if (err) return console.log(err);
+		        keywords(textDir+file.replace('.wav','')+'.txt',keywordsDir+file.replace('.wav','')+'.txt');
 		        convert(file,corpusName);
+
 		    });
 		} else {
 			var line = file+' '+file.replace('.wav','')+'.txt';
 			fs.appendFile(txt, line, function (err) {
 		        if (err) return console.log(err);
+		        keywords(textDir+file.replace('.wav','')+'.txt',keywordsDir+file.replace('.wav','')+'.txt');
 		        convert(file,corpusName);
 		    });
 		}
@@ -144,4 +149,54 @@ function convert(audioName,corpusName){
         .toFormat('wav')
         .run();
     });
+}
+
+//create keywords file
+//make keywords list
+function keywords(textFile,keywordsFile){
+	var  fs = require('fs-extra');
+	var tm = require('text-miner');
+	var text = fs.readFileSync(textFile,"UTF-8").toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+	var textF = rmStopWords(text);
+	chooseKW(textF.split(' '),function(result){
+		return done(result);
+	});
+  	//make a list of original words
+	function rmStopWords(originalText){
+		var my_corpus = new tm.Corpus([originalText.replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()?]/g,"")]);
+		my_corpus.removeWords(["\'s","ain\'t","aren\'t","can\'t","couldn\’t","didn\'t","doesn't","don't","hasn't","haven't","he's","here's","i'd","i'll","i'm","i've","isn't","it'd","it'll","it's","let's","shouldn't","that's","they'd","they'll","they're","they've","wasn't","we'd","we'll","we're","we've","weren't","what's","where's","who's","won't","wouldn't","you'd","you'll","you're","you've"]);
+		my_corpus.removeWords(["uh","yeah","yep","um","mmhmm","pe","ah","hmm","mm",""]);
+		my_corpus.removeWords(tm.STOPWORDS.EN);
+		my_corpus.removeNewlines();
+		my_corpus.removeInvalidCharacters();
+		my_corpus.clean();
+		var result = my_corpus.documents[0].replace(/ ' /g," ");
+		return result;
+	}
+	//choose a proportional number btw 0 and n
+	function randomInt (low, high) {
+		return Math.floor(Math.random() * (high - low) + low);
+	}
+	//choose k words in n words of original words
+	function chooseKW(list,done){
+		var keywords = [];
+		function shuffle(a) {
+			var j, x, i;
+			for (i = a.length; i; i -= 1) {
+				j = Math.floor(Math.random() * i);
+				x = a[i - 1];
+				a[i - 1] = a[j];
+				a[j] = x;
+			}
+		}
+		shuffle(list);
+		var k = randomInt(list.length/2,list.length)
+		var t;
+		for (t=0;t<k;t++){
+			var line = list[t]+'\n';
+			fs.appendFile(keywordsFile, line, function (err) {
+				if (err) return console.log(err);
+			});
+		}
+	}
 }

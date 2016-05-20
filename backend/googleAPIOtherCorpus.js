@@ -14,7 +14,6 @@ exports.transcribeCorpus = function(req, res){
 	var keywordsFolder = corpusFolder+'keywords/';
 	var audioName;
 	var lines = fs.readFileSync(corpusFolder+corpus+'.txt').toString().split('\n');
-	var audio_utt = __dirname+'/lib/googleApi/audio_utt.txt';
 	var output = [];
 	var input = [];
 	var time = 0;
@@ -34,7 +33,6 @@ exports.transcribeCorpus = function(req, res){
 	};
 
 	function transcribe(filePaths,i){
-		console.log(filePaths[i]);
 		if (i!==filePaths.length) {
 			var opts = {
 				file: filePaths[i],
@@ -42,7 +40,7 @@ exports.transcribeCorpus = function(req, res){
 				timeout: '100000',
 				sampleRate: '16000',
 				lang: 'en-US',
-				maxRequests: 1
+				maxRequests: 4
 			};
 			var speech = require('google-speech-api');
 			var start = new Date().getTime();
@@ -55,9 +53,10 @@ exports.transcribeCorpus = function(req, res){
 				var result='';
 				var resultsL = results.length;
 			  	for (var j=0;j<resultsL;j++){
-			  		if (results[j].trans.result[0] != undefined)
+			  		if (results[j].trans.result[0] !== undefined)
 			  			result+=(results[j].trans.result[0]).alternative[0].transcript+' ';
 			    	if (j===resultsL-1) {
+			    		console.log(result);
 			    		var end = new Date().getTime();
 			    		time += (end-start)/(1000*60);
 			    		output.push(result);
@@ -75,10 +74,12 @@ exports.transcribeCorpus = function(req, res){
 		console.log('Audio '+i)
 		var result = results[i];
 		console.log("*transcribed*: "+result);
+		var trancriptTxt = cleanText(result);
 		var txtName = (lines[i].toString().split(' '))[1];
-		var originalText = fs.readFileSync(textFilesFolder+txtName,"UTF-8").toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"");
-		//console.log('org: '+originalText);
-		var resultTable = result.split(' ');
+		var loadTxt = fs.readFileSync(textFilesFolder+txtName,"UTF-8").toLowerCase();
+		var originalText = cleanText(loadTxt);
+		console.log('org: '+originalText);
+		var resultTable = trancriptTxt.split(' ');
 		var textTable = originalText.split(' ');
 		var keywords = getKeywords(keywordsFolder+txtName);
 		//send socket to client time by time
@@ -93,7 +94,7 @@ exports.transcribeCorpus = function(req, res){
 				transformText.forEach(function(word){
 					textSimplifize+=word+' ';
 				});
-				var campare = campareText(resultSimplifize, textSimplifize);
+				var campare = campareText(resultSimplifize.toLowerCase(), textSimplifize);
 				var keywordsSimplifize = [];
 				keywords.forEach(function(keyword){
 					if (keyword!==''&&keyword!==' '){
@@ -108,26 +109,27 @@ exports.transcribeCorpus = function(req, res){
 							keywordsSimplifize.push(keyword.toLowerCase().replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()]/g,"").replace(' ',''))
 						}
 					})
-					//var campare = campareText(result, originalText);
-					var precisionRecall = calculs.precisionRecall(resultSimplifize.split(' '), transformKeywords);
-					//var precisionRecall = calculs.precisionRecall(resultTable,keywordsSimplifize);
+					var precisionRecall = calculs.precisionRecall(resultSimplifize.toLowerCase().split(' '), transformKeywords);
 					if (i !== (lines.length-1)){
-						socket.emit('send msg', {
-							WER: calculs.werCalcul(campare,textSimplifize),
-							//WER: calculs.werCalcul(campare, originalText),
-							recall: precisionRecall.recall,
-							timeExec: 0
-						});
+						setTimeout(function(){
+							socket.emit('send msg', {
+								WER: calculs.werCalcul(campare,textSimplifize),
+								recall: precisionRecall.recall,
+								timeExec: 0
+							});
+						},2000);
 						var audio = results[i].substr(0,results[i].indexOf(' ',0));
 						console.log(audio+' msg is send');
 						sendResults(results,time,i+1);		
 					} else {
-						socket.emit('send last msg', {
-							WER: calculs.werCalcul(campare,textSimplifize),
-							//WER: calculs.werCalcul(campare, originalText),
-							recall: precisionRecall.recall,
-							timeExec: time
-						});
+						setTimeout(function(){
+							socket.emit('send last msg', {
+								WER: calculs.werCalcul(campare,textSimplifize),
+								//WER: calculs.werCalcul(campare, originalText),
+								recall: precisionRecall.recall,
+								timeExec: time
+							});
+						},2000);
 						var audio = results[i].substr(0,results[i].indexOf(' ',0));
 						console.log(audio+' msg is send');
 					}
@@ -149,4 +151,18 @@ function campareText(cibleText, originalText){
 function getKeywords (filePath){
 	var fs = require('fs-extra');
 	return fs.readFileSync(filePath).toString().split('\n');
+}
+
+//clean text
+function cleanText(originalText){
+  var tm = require('text-miner');
+  var my_corpus = new tm.Corpus([originalText.replace(/[.,"\/#!$%\^&\*;:{}=\-_`~()?]/g,"")]);
+  //my_corpus.removeWords(["\'s","ain\'t","aren\'t","can\'t","couldn\’t","didn\'t","doesn't","don't","hasn't","haven't","he's","here's","i'd","i'll","i'm","i've","isn't","it'd","it'll","it's","let's","shouldn't","that's","they'd","they'll","they're","they've","wasn't","we'd","we'll","we're","we've","weren't","what's","where's","who's","won't","wouldn't","you'd","you'll","you're","you've"]);
+  my_corpus.removeWords(["uh","yeah","yep","um","mmhmm","pe","ah","hmm","mm","mhm"]);
+  //my_corpus.removeWords(tm.STOPWORDS.EN);
+  my_corpus.removeNewlines();
+  my_corpus.removeInvalidCharacters();
+  my_corpus.clean();
+  var result = my_corpus.documents[0].replace(/ ' /g," ");
+  return result;
 }

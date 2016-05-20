@@ -170,9 +170,15 @@ angular.module('myApp.directives', ['chart.js']).
 			      			}
 			      			break;
 			      		case "/audiofile":
-			      			toolSelectedFactory.clearList();
-			      			toolSelectedFactory.setSelectedTool(tool);
-		      				$scope.selectionTool = toolSelectedFactory.getSelectedTool();
+		      				if (toolSelectedFactory.getSelectedTool().indexOf(tool) > -1){
+		      					toolSelectedFactory.rmSelectedTool(tool);
+		    					$scope.selectionTool = toolSelectedFactory.getSelectedTool();
+		    				}
+			      			else {
+			      				toolSelectedFactory.clearList();
+			      				toolSelectedFactory.setSelectedTool(tool);
+			      				$scope.selectionTool = toolSelectedFactory.getSelectedTool();
+			      			}
 		      				break;
 		      			case "/yourmicro":
 			      			toolSelectedFactory.clearList();
@@ -198,15 +204,16 @@ angular.module('myApp.directives', ['chart.js']).
 				var transcribeButton = document.getElementById('transcribe-button');
 			
 				//take result if it's sent by socket (for kaldi case)
-				mySocket.on('send msg audio',function(data){	
+				mySocket.on('send msg audio',function(data){
+					console.log("Socket received");	
 					$scope.isShow = false;
-					$scope.transcribedText = data.transcribedText;
+					document.getElementById("transcribedText").innerHTML = "&bull; Transcribed text here : "+data.transcribedText;
 					//affichage de comparaison
 					if (data.compareObject !== undefined){
 					  if (data.compareObject !== ""){
-					      var display = document.getElementById("compareObject");
-					      display.innerHTML = "&bull; Compare text here : ";
-					      data.compareObject.forEach(function(part){
+					      	var display = document.getElementById("compareObject");
+					      	display.innerHTML = "&bull; Compare text here : ";
+					      	data.compareObject.forEach(function(part){
 					        // green for additions, red for deletions
 					        // black for common parts
 					        var color = part.added ? 'green' :
@@ -216,7 +223,7 @@ angular.module('myApp.directives', ['chart.js']).
 					        span.appendChild(document.createTextNode(part.value));
 					        if (part.removed) span.appendChild(document.createTextNode(' '));
 					        display.appendChild(span);
-					      });
+					      	});
 					      $scope.originalText = data.originalTextExport;
 					   }
 					   else {
@@ -236,6 +243,11 @@ angular.module('myApp.directives', ['chart.js']).
 					$scope.originalText = "";
 					transcribeButton.removeAttribute("disabled");
 				});
+				mySocket.connect('http://localhost:8080/',{'forceNew':true });
+
+				$scope.clearRes=function(){
+					document.getElementById("transcribedText").innerHTML = "&bull; Transcribed text here : ";
+				}
 
 				//function executes when clicking transcribe button
 				$scope.transcribeRequest =function (){
@@ -245,10 +257,6 @@ angular.module('myApp.directives', ['chart.js']).
 						$scope.errorMessage = "Choose a toolkit before!";
 						return 0;
 					}; 
-					//if the toolkit is kaldi, create a socket to server
-					if (tool === "Kaldi"){
-						mySocket.connect('http://localhost:8080/',{'forceNew':true });
-					}
 					//if the toolkit is sphinx-4, disconnect the socket
 					if (tool === "Sphinx-4"){
 						mySocket.disconnect();
@@ -268,6 +276,7 @@ angular.module('myApp.directives', ['chart.js']).
 					if (tool === 'Kaldi'){
 						var ws = new WebSocket("ws://localhost:8888/client/ws/speech");
 						var transFinal = "";
+						var outputContent = "";
 						ws.onopen = function (event) {
 							console.info('open');
 							ws.send(transcribeFile.getFile()); 
@@ -276,17 +285,16 @@ angular.module('myApp.directives', ['chart.js']).
 
 						ws.onclose = function (event) {
 							console.info('close');
-							console.log(transFinal)
 							//send transcribed text to server to receive compare text
 							$http({
 					      		method: 'POST',
 					      		url: '/transcribe/'+tool+'/audio/'+clientDistinct.getNameClient(),
-					      		data: {value: transFinal},
+					      		data: {value: transFinal, outputFormat: outputContent, name: transcribeFile.getFile().name},
 					      		headers: { 'Content-Type': 'application/json' }
 						    }).
 						    success(function(data, status, headers, config) {
+						    	mySocket.connect('http://localhost:8080/',{'forceNew':true });
 						      	console.log('requete accepte');
-						      	mySocket.connect('http://localhost:8080/',{'forceNew':true });
 						    }).
 						    error(function(data, status, headers, config) {
 						      	$scope.transcribedText = 'Error!';
@@ -297,13 +305,17 @@ angular.module('myApp.directives', ['chart.js']).
 						ws.onerror = function (event) {
 							console.info('error');
 						};
-						var old="&bull; Transcribed text here: ";
+						var old="&bull; Transcribed text here : ";
 						ws.onmessage = function (event) {
 							var hyp = JSON.parse(event.data);
 							if (hyp.result != undefined){
 								var trans = hyp.result.hypotheses[0].transcript;
 								if (JSON.parse(event.data).result.final){
+									var end = parseFloat(JSON.parse(event.data.replace(/-/g,"_")).segment_start)+parseFloat(JSON.parse(event.data.replace(/-/g,"_")).segment_length);
+									var start = JSON.parse(event.data.replace(/-/g,"_")).segment_start;
+									var fileName = transcribeFile.getFile().name.replace(/.wav/,"");
 									transFinal += trans+' ';
+									outputContent += "\""+start+"\""+";"+"\""+end+"\""+";"+"\""+fileName+"\""+";"+"\""+trans+"\""+"\n";
 									document.getElementById("transcribedText").innerHTML = old+trans+' ';
 									old = document.getElementById("transcribedText").innerHTML.toString();
 								}
@@ -472,7 +484,7 @@ angular.module('myApp.directives', ['chart.js']).
 				}
 
 				var createWebSocket = function(){
-					var old="&bull; Transcribed text here: ";
+					var old="&bull; Transcribed text here : ";
 					var ws = new WebSocket("ws://localhost:8888/client/ws/speech?content-type=audio/x-raw,+layout=(string)interleaved,+rate=(int)16000,+format=(string)S16LE,+channels=(int)1");
 					ws.onopen = function () {
 						intervalKey = setInterval(function() {
@@ -771,6 +783,7 @@ angular.module('myApp.directives', ['chart.js']).
 				var timeSum;
 				//take result if it's sent by socket (for kaldi case)
 				mySocket.on('send msg',function(data){	
+					mySocket.connect('http://localhost:8080/',{'forceNew':true });
 					console.log('recoie un message from server');
 					numAudio += 1;
 					var br = document.createElement("br");
@@ -818,7 +831,8 @@ angular.module('myApp.directives', ['chart.js']).
 					document.getElementById('res').innerHTML="";
 					dataResult.clear(seriesDraw.getSeries().length);
 				}
-				
+
+				//mySocket.connect('http://localhost:8080/',{'forceNew':true });
 				//function when click transcribe button
 				$scope.requestAction = function(){
 					werSum = 0;
@@ -831,8 +845,7 @@ angular.module('myApp.directives', ['chart.js']).
 					 		break;
 					 	default:
 					    	var tool = toolSelectedFactory.getSelectedTool()[0];
-					 		//if the toolkit is sphinx-4, disconnect the socket
-							gestionSocket(tool);
+							//mySocket.connect('http://localhost:8080/',{'forceNew':true });
 							//verify if error cases
 							if (choosedCorpus.getCorpusName() === "unknown"){
 								$scope.errorMsg="Have you choosen a corpus yet?";
@@ -849,7 +862,6 @@ angular.module('myApp.directives', ['chart.js']).
 			            		success(function(data, status, headers, config) {
 			            			//request sent
 			            			console.log('transcribe corpus request sent');
-			            			//affichage de result
 			            			mySocket.connect('http://localhost:8080/',{'forceNew':true });
 			            		}).
 			            		error(function(data, status, headers, config) {
@@ -862,11 +874,8 @@ angular.module('myApp.directives', ['chart.js']).
 					};
 				};
 				function gestionSocket(tool){
-					if (tool === "Sphinx-4"){
-						mySocket.disconnect();
-					}
 					//if the toolkit is kal, connect the socket
-					else if (tool === "Kaldi"){
+					if (tool === "Kaldi"){
 						mySocket.connect('http://localhost:8080/',{'forceNew':true });
 					}
 				}

@@ -141,7 +141,6 @@ exports.transcribeCorpus = function(req, res) {
 					} else {
 						socket.emit('send last msg', {
 							WER: calculs.werCalcul(campare,textSimplifize),
-							//WER: calculs.werCalcul(campare, originalText),
 							recall: precisionRecall.recall,
 							timeExec: time
 						});
