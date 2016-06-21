@@ -9,7 +9,7 @@ exports.transcribeKaldi = function(req,res){
       var textFile = getData("text", clientName);
   }
   makeOutputFile(req.body.outputFormat, req.body.name);
-  sendMsg(req.body.value.replace(/\[noise\]/g,"").replace(/\[laughter\]/g,"").replace(/mm/g,""));
+  sendMsg(req.body.value.toLowerCase().replace(/\[noise\]/g,"").replace(/\[laughter\]/g,"").replace(/mm/g,""));
   
 
   function makeOutputFile(content,fileName){
@@ -43,11 +43,13 @@ exports.transcribeKaldi = function(req,res){
               transformText.forEach(function(word){
                 textSimplifize+=word+' ';
               });
-              console.log(textSimplifize);
-              console.log(resultSimplifize);
+              var campare = campareText(resultSimplifize, textSimplifize);
+              var calculs = require('./calculs.js');
+              var wer = calculs.werCalcul(campare,textSimplifize);
+              console.log(wer);
               var sendObject = {
                 transcribedText: resultSimplifize,
-                compareObject: campareText(resultSimplifize, textSimplifize),
+                compareObject: campare,
                 originalTextExport: textSimplifize,
               };
               console.log(sendObject);

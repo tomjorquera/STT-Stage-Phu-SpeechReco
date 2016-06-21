@@ -305,19 +305,22 @@ angular.module('myApp.directives', ['chart.js']).
 						ws.onerror = function (event) {
 							console.info('error');
 						};
+						
 						var old="&bull; Transcribed text here : ";
 						ws.onmessage = function (event) {
 							var hyp = JSON.parse(event.data);
 							if (hyp.result != undefined){
 								var trans = hyp.result.hypotheses[0].transcript;
 								if (JSON.parse(event.data).result.final){
-									var end = parseFloat(JSON.parse(event.data.replace(/-/g,"_")).segment_start)+parseFloat(JSON.parse(event.data.replace(/-/g,"_")).segment_length);
-									var start = JSON.parse(event.data.replace(/-/g,"_")).segment_start;
-									var fileName = transcribeFile.getFile().name.replace(/.wav/,"");
-									transFinal += trans+' ';
-									outputContent += "\""+start+"\""+";"+"\""+end+"\""+";"+"\""+fileName+"\""+";"+"\""+trans+"\""+"\n";
-									document.getElementById("transcribedText").innerHTML = old+trans+' ';
-									old = document.getElementById("transcribedText").innerHTML.toString();
+									if (trans.replace(/\[noise\] /g,"").replace(/mm /g,"").replace(/mhm /g,"").split(" ").length > 3){
+										var end = parseFloat(JSON.parse(event.data.replace(/-/g,"_")).segment_start)+parseFloat(JSON.parse(event.data.replace(/-/g,"_")).segment_length);
+										var start = JSON.parse(event.data.replace(/-/g,"_")).segment_start;
+										var fileName = transcribeFile.getFile().name.replace(/.wav/,"");
+										transFinal += trans+' ';
+										outputContent += start+","+end+","+"\""+fileName+"\""+","+"\""+trans+"\""+"\n";
+										document.getElementById("transcribedText").innerHTML = old+trans+' ';
+										old = document.getElementById("transcribedText").innerHTML.toString();
+									}
 								}
 								else document.getElementById("transcribedText").innerHTML = old + trans;
 							}
