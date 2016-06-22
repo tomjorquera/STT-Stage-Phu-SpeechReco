@@ -36,6 +36,10 @@ With Bower and Grunt.
           - kaldi-gstreamer-server: https://github.com/alumae/kaldi-gstreamer-server
         Run the kaldi server in kaldi-gstreamer-server project
 
+7. Fixed google speech module of nodeJS
+
+        replace node_modules/google-speech-api/index.js by /backend/lib/index.js 
+
 7. Launch application
 
         grunt dev
