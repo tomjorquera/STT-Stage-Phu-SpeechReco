@@ -243,7 +243,7 @@ angular.module('myApp.directives', ['chart.js']).
 					$scope.originalText = "";
 					transcribeButton.removeAttribute("disabled");
 				});
-				mySocket.connect('http://localhost:8080/',{'forceNew':true });
+				mySocket.connect('http://' + location.hostname + ':8080/',{'forceNew':true });
 
 				$scope.clearRes=function(){
 					document.getElementById("transcribedText").innerHTML = "&bull; Transcribed text here : ";
@@ -274,7 +274,7 @@ angular.module('myApp.directives', ['chart.js']).
 					$scope.originalText = "";
 					//send request to server
 					if (tool === 'Kaldi'){
-						var ws = new WebSocket("ws://localhost:8888/client/ws/speech");
+						var ws = new WebSocket('ws://' + location.hostname + ':8888/client/ws/speech');
 						var transFinal = "";
 						var outputContent = "";
 						ws.onopen = function (event) {
@@ -293,7 +293,7 @@ angular.module('myApp.directives', ['chart.js']).
 					      		headers: { 'Content-Type': 'application/json' }
 						    }).
 						    success(function(data, status, headers, config) {
-						    	mySocket.connect('http://localhost:8080/',{'forceNew':true });
+						    	mySocket.connect('http://' + location.hostname + ':8080/',{'forceNew':true });
 						      	console.log('requete accepte');
 						    }).
 						    error(function(data, status, headers, config) {
@@ -333,7 +333,7 @@ angular.module('myApp.directives', ['chart.js']).
 					    success(function(data, status, headers, config) {
 					      	console.log('requete accepte');
 					      	if (tool === "Sphinx-4"){
-					      		mySocket.connect('http://localhost:8080/',{'forceNew':true });
+					      		mySocket.connect('http://' + location.hostname + ':8080/',{'forceNew':true });
 					      	}
 					    }).
 					    error(function(data, status, headers, config) {
@@ -375,7 +375,7 @@ angular.module('myApp.directives', ['chart.js']).
 					};
 					//if the toolkit is kaldi, create a socket to server
 					if (tool === "Kaldi"){
-						mySocket.connect('http://localhost:8080/',{'forceNew':true });
+						mySocket.connect('http://' + location.hostname + ':8080/',{'forceNew':true });
 					}
 					//if the toolkit is sphinx-4, disconnect the socket
 					if (tool === "Sphinx-4"){
@@ -395,7 +395,7 @@ angular.module('myApp.directives', ['chart.js']).
 				    }).
 				    success(function(data, status, headers, config) {
 				      	if (tool === "Sphinx-4"){
-					      	mySocket.connect('http://localhost:8080/',{'forceNew':true });
+					      	mySocket.connect('http://' + location.hostname + ':8080/',{'forceNew':true });
 					    }
 				    }).
 				    error(function(data, status, headers, config) {
@@ -487,8 +487,8 @@ angular.module('myApp.directives', ['chart.js']).
 				}
 
 				var createWebSocket = function(){
-					var old="&bull; Transcribed text here : ";
-					var ws = new WebSocket("ws://localhost:8888/client/ws/speech?content-type=audio/x-raw,+layout=(string)interleaved,+rate=(int)16000,+format=(string)S16LE,+channels=(int)1");
+					var old="&bull; Transcribed text here: ";
+					var ws = new WebSocket('ws://' + location.hostname + ':8888/client/ws/speech?content-type=audio/x-raw,+layout=(string)interleaved,+rate=(int)16000,+format=(string)S16LE,+channels=(int)1');
 					ws.onopen = function () {
 						intervalKey = setInterval(function() {
 							recorder.export16kMono(function(blob) {
@@ -786,7 +786,7 @@ angular.module('myApp.directives', ['chart.js']).
 				var timeSum;
 				//take result if it's sent by socket (for kaldi case)
 				mySocket.on('send msg',function(data){	
-					mySocket.connect('http://localhost:8080/',{'forceNew':true });
+					mySocket.connect('http://' + location.hostname + ':8080/',{'forceNew':true });
 					console.log('recoie un message from server');
 					numAudio += 1;
 					var br = document.createElement("br");
@@ -865,7 +865,8 @@ angular.module('myApp.directives', ['chart.js']).
 			            		success(function(data, status, headers, config) {
 			            			//request sent
 			            			console.log('transcribe corpus request sent');
-			            			mySocket.connect('http://localhost:8080/',{'forceNew':true });
+			            			//affichage de result
+			            			mySocket.connect('http://' + location.hostname + ':8080/',{'forceNew':true });
 			            		}).
 			            		error(function(data, status, headers, config) {
 			            			$scope.showIcon = false;
@@ -879,7 +880,7 @@ angular.module('myApp.directives', ['chart.js']).
 				function gestionSocket(tool){
 					//if the toolkit is kal, connect the socket
 					if (tool === "Kaldi"){
-						mySocket.connect('http://localhost:8080/',{'forceNew':true });
+						mySocket.connect('http://' + location.hostname + ':8080/',{'forceNew':true });
 					}
 				}
 			}
