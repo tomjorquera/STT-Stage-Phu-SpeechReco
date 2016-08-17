@@ -1,14 +1,21 @@
-FROM ubuntu:xenial
+FROM nvidia/cuda:7.0-cudnn4-runtime
 ENV install_dir /root/SpeechReco
 
 # Install dependencies
 
 RUN apt update && apt full-upgrade -y
-RUN apt install --fix-missing -y git vim nodejs maven npm python-setuptools openjdk-8-jdk automake autoconf wget libtool subversion libatlas-base-dev python-pip python-gi libgstreamer1.0-dev gstreamer1.0-plugins-good gstreamer1.0-tools gstreamer1.0-pulseaudio libjansson-dev curl
+RUN apt install -y git vim nodejs maven npm python-setuptools openjdk-7-jdk automake autoconf wget libtool subversion libatlas-base-dev python-pip python-gi libgstreamer1.0-dev gstreamer1.0-plugins-good gstreamer1.0-tools gstreamer1.0-pulseaudio libjansson-dev curl
+
+RUN apt install -y --fix-missing cuda || true # we have some non-blocking failures here
 
 RUN ln -s /usr/bin/nodejs /usr/bin/node && ln -s -f /bin/bash /bin/sh
 
 RUN npm install -g npm@latest grunt-cli bower && easy_install http://closure-linter.googlecode.com/files/closure_linter-latest.tar.gz
+
+# Install cuda dependency
+
+RUN wget http://developer.download.nvidia.com/compute/cuda/7.5/Prod/local_installers/cuda-repo-ubuntu1404-7-5-local_7.5-18_amd64.deb
+RUN apt install -y cuda || true # we have some non-blocking failures here
 
 # Clone required repositories
 
@@ -34,7 +41,7 @@ WORKDIR ${install_dir}/backend/lib/kaldi-trunk/tools/
 RUN extras/check_dependencies.sh && make
 
 WORKDIR ${install_dir}/backend/lib/kaldi-trunk/src
-RUN ./configure --shared && make ext
+RUN ./configure --shared --cudatk-dir=/usr/local/cuda && make ext
 
 RUN pip install ws4py==0.3.2 tornado pyyaml
 
