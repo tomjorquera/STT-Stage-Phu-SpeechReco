@@ -47,68 +47,67 @@ exports.transcribe = function(req, res) {
 	} 
 	else {
 		transcribeGoogleAPI(audioFile,sendMsg);
-
-		function sendMsg(result){
-			//treat the client request
-			switch (selectedInput){ 
-				case 'audio':
-					if (textFile !== 'error'){ //text file is uploaded
-						var loadTxt = fs.readFileSync(textFile,"UTF-8").toLowerCase();
-						var originalText = cleanText(loadTxt); 
-						fs.unlinkSync(textFile);
-						fs.unlinkSync(audioFile);
-						console.log("googleAPI renvoie resultat");
-						var transcriptTxt = cleanText(result);
-						var resultTable = transcriptTxt.split(' ');
-						var textTable = originalText.split(' ');
-						lemmer.lemmatize(resultTable, function(err, transformResult){
-							var resultSimplifize='';
-							transformResult.forEach(function(word){
-								resultSimplifize+=word+' ';
-							});
-							lemmer.lemmatize(textTable, function(err, transformText){
-								var textSimplifize='';
-								transformText.forEach(function(word){
-									textSimplifize+=word+' ';
-								});
-								socket.emit('send msg audio', {
-									transcribedText: resultSimplifize.toLowerCase(),
-									compareObject: campareText(resultSimplifize.toLowerCase(), textSimplifize),
-									originalTextExport: textSimplifize,
-								});
-								console.log("googleAPI fini");
-							});
-						});	
-					}
-					else {//text file is NOT uploaded
-						var resultTable = result.split(' ');
-						lemmer.lemmatize(resultTable, function(err, transformResult){
-							var resultSimplifize='';
-							transformResult.forEach(function(word){
-								resultSimplifize+=word+' ';
-							});
-							socket.emit('send msg audio', {
-								transcribedText: resultSimplifize,
-								compareObject: "",
-								originalTextExport: "",
-							});
-						});		
-					}		
-					break;
-				case 'micro':
-					//fs.unlinkSync(audioFile);
-					console.log("Sphinx-4 renvoie resultat");
-					socket.emit('send msg micro',{
-						transcribedText: result
-					});
-					break;
-				default:
-					break;
-		    }
-		}
 	}
 }
 
+function sendMsg(result){
+	//treat the client request
+	switch (selectedInput){
+		case 'audio':
+			if (textFile !== 'error'){ //text file is uploaded
+				var loadTxt = fs.readFileSync(textFile,"UTF-8").toLowerCase();
+				var originalText = cleanText(loadTxt);
+				fs.unlinkSync(textFile);
+				fs.unlinkSync(audioFile);
+				console.log("googleAPI renvoie resultat");
+				var transcriptTxt = cleanText(result);
+				var resultTable = transcriptTxt.split(' ');
+				var textTable = originalText.split(' ');
+				lemmer.lemmatize(resultTable, function(err, transformResult){
+					var resultSimplifize='';
+					transformResult.forEach(function(word){
+						resultSimplifize+=word+' ';
+					});
+					lemmer.lemmatize(textTable, function(err, transformText){
+						var textSimplifize='';
+						transformText.forEach(function(word){
+							textSimplifize+=word+' ';
+						});
+						socket.emit('send msg audio', {
+							transcribedText: resultSimplifize.toLowerCase(),
+							compareObject: campareText(resultSimplifize.toLowerCase(), textSimplifize),
+							originalTextExport: textSimplifize,
+						});
+						console.log("googleAPI fini");
+					});
+				});
+			}
+			else {//text file is NOT uploaded
+				var resultTable = result.split(' ');
+				lemmer.lemmatize(resultTable, function(err, transformResult){
+					var resultSimplifize='';
+					transformResult.forEach(function(word){
+						resultSimplifize+=word+' ';
+					});
+					socket.emit('send msg audio', {
+						transcribedText: resultSimplifize,
+						compareObject: "",
+						originalTextExport: "",
+					});
+				});
+			}
+			break;
+		case 'micro':
+			//fs.unlinkSync(audioFile);
+			console.log("Sphinx-4 renvoie resultat");
+			socket.emit('send msg micro',{
+				transcribedText: result
+			});
+			break;
+		default:
+			break;
+    }
+}
 
 //Transcribe by sphinx-4 function that give the transcribed text in output
 function transcribeGoogleAPI(input,callback){
